@@ -1,12 +1,14 @@
-import { GAME_CONFIG } from './constants.js';
+import { GAME_CONFIG, VISUAL_STATES } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 
 class WordyGame {
     constructor() {
         this.letterSequence = [];
-        this.currentLetters = [];
+        this.currentLetters = []; // Now stores letter objects instead of just strings
         this.score = 0;
         this.isGameRunning = false;
+        this.nextLetterTimer = null;
+        this.updateInterval = null;
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -15,6 +17,7 @@ class WordyGame {
         this.startButton = document.getElementById('start-game');
         this.resetButton = document.getElementById('reset-game');
         this.scoreDisplay = document.getElementById('score');
+        this.timerDisplay = document.getElementById('next-letter-timer');
         
         this.initializeEventListeners();
     }
@@ -35,8 +38,45 @@ class WordyGame {
         this.isGameRunning = true;
         this.letterSequence = generateLetterSequence(GAME_CONFIG.DEFAULT_SEQUENCE_LENGTH);
         this.startButton.disabled = true;
-        this.wordInput.focus(); // Focus input field for immediate typing
+        this.wordInput.focus();
+        
+        // Start letter state updates
+        this.startLetterStateUpdates();
+        
         this.addNextLetter();
+    }
+    
+    startLetterStateUpdates() {
+        this.updateInterval = setInterval(() => {
+            if (this.isGameRunning) {
+                const currentTime = Date.now();
+                
+                // Update visual states and find oldest letter
+                let oldestAge = 0;
+                let oldestIndex = -1;
+                
+                this.currentLetters.forEach((letterObj, index) => {
+                    const age = letterObj.updateVisualState(currentTime);
+                    if (age > oldestAge) {
+                        oldestAge = age;
+                        oldestIndex = index;
+                    }
+                });
+                
+                // Remove oldest danger letter if it exists
+                if (oldestIndex !== -1 && 
+                    this.currentLetters[oldestIndex].visualState === VISUAL_STATES.DANGER) {
+                    this.currentLetters[oldestIndex].element.remove();
+                    this.currentLetters.splice(oldestIndex, 1);
+                    
+                    // Ensure minimum letters
+                    while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
+                           this.letterSequence.length > 0) {
+                        this.addNextLetter();
+                    }
+                }
+            }
+        }, 1000); // Update every second
     }
     
     resetGame() {
@@ -48,6 +88,11 @@ class WordyGame {
         this.letterTray.innerHTML = '';
         this.wordInput.value = '';
         this.startButton.disabled = false;
+        this.timerDisplay.textContent = '0';
+        
+        if (this.nextLetterTimer) {
+            clearTimeout(this.nextLetterTimer);
+        }
     }
     
     addNextLetter() {
@@ -56,21 +101,42 @@ class WordyGame {
         }
         
         if (this.currentLetters.length >= GAME_CONFIG.MAX_LETTERS) {
-            setTimeout(() => this.addNextLetter(), GAME_CONFIG.FULL_TRAY_DROP_INTERVAL);
+            this.scheduleNextLetter(GAME_CONFIG.FULL_TRAY_DROP_INTERVAL);
             return;
         }
         
         const nextLetter = this.letterSequence.shift();
-        this.currentLetters.push(nextLetter);
-        
-        const letterElement = createLetterElement(nextLetter);
-        this.letterTray.appendChild(letterElement);
+        const letterObj = createLetterElement(nextLetter);
+        this.currentLetters.push(letterObj);
+        this.letterTray.appendChild(letterObj.element);
         
         if (this.letterSequence.length > 0) {
-            setTimeout(() => this.addNextLetter(), GAME_CONFIG.LETTER_DROP_INTERVAL);
+            this.scheduleNextLetter(GAME_CONFIG.LETTER_DROP_INTERVAL);
         } else {
             this.endGame();
         }
+    }
+    
+    scheduleNextLetter(interval) {
+        if (this.nextLetterTimer) {
+            clearTimeout(this.nextLetterTimer);
+        }
+        
+        let timeLeft = Math.ceil(interval / 1000);
+        this.timerDisplay.textContent = timeLeft;
+        
+        const updateTimer = setInterval(() => {
+            timeLeft--;
+            this.timerDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(updateTimer);
+            }
+        }, 1000);
+        
+        this.nextLetterTimer = setTimeout(() => {
+            clearInterval(updateTimer);
+            this.addNextLetter();
+        }, interval);
     }
     
     submitWord() {
@@ -83,7 +149,8 @@ class WordyGame {
             return;
         }
         
-        if (!canFormWord(word, this.currentLetters)) {
+        const availableLetters = this.currentLetters.map(letterObj => letterObj.letter);
+        if (!canFormWord(word, availableLetters)) {
             alert('Cannot form this word with available letters!');
             return;
         }
@@ -91,8 +158,9 @@ class WordyGame {
         // Remove used letters
         const wordLetters = word.split('');
         wordLetters.forEach(letter => {
-            const index = this.currentLetters.indexOf(letter);
+            const index = this.currentLetters.findIndex(letterObj => letterObj.letter === letter);
             if (index !== -1) {
+                this.currentLetters[index].element.remove();
                 this.currentLetters.splice(index, 1);
             }
         });
@@ -102,15 +170,12 @@ class WordyGame {
         this.score += points;
         this.scoreDisplay.textContent = this.score;
         
-        // Clear input and update letter tray
+        // Clear input
         this.wordInput.value = '';
-        this.letterTray.innerHTML = '';
-        this.currentLetters.forEach(letter => {
-            this.letterTray.appendChild(createLetterElement(letter));
-        });
         
         // Ensure minimum letters
-        while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && this.letterSequence.length > 0) {
+        while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
+               this.letterSequence.length > 0) {
             this.addNextLetter();
         }
     }
@@ -118,6 +183,15 @@ class WordyGame {
     endGame() {
         this.isGameRunning = false;
         this.startButton.disabled = false;
+        
+        if (this.nextLetterTimer) {
+            clearTimeout(this.nextLetterTimer);
+        }
+        
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+        
         alert(`Game Over! Final Score: ${this.score}`);
     }
 }

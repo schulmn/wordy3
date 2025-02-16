@@ -1,4 +1,4 @@
-import { LETTER_POINTS, LETTER_FREQUENCIES } from './constants.js';
+import { LETTER_POINTS, LETTER_FREQUENCIES, GAME_CONFIG, VISUAL_STATES } from './constants.js';
 
 /**
  * Generates a sequence of letters based on frequency distribution
@@ -34,16 +34,43 @@ function createLetterPool() {
 }
 
 /**
- * Creates a letter element with its point value
+ * Creates a letter element with its point value and timing information
  * @param {string} letter - The letter to display
- * @returns {HTMLElement} The letter element
+ * @returns {Object} The letter object containing element and timing info
  */
 export function createLetterElement(letter) {
     const element = document.createElement('div');
     element.className = 'letter';
     element.dataset.points = LETTER_POINTS[letter];
     element.textContent = letter;
-    return element;
+    
+    const timestamp = Date.now();
+    element.dataset.timestamp = timestamp;
+    
+    return {
+        element,
+        letter,
+        timestamp,
+        visualState: VISUAL_STATES.NORMAL,
+        updateVisualState: function(currentTime) {
+            const age = currentTime - this.timestamp;
+            let newState = VISUAL_STATES.NORMAL;
+            
+            if (age >= GAME_CONFIG.LETTER_AGE_DANGER) {
+                newState = VISUAL_STATES.DANGER;
+            } else if (age >= GAME_CONFIG.LETTER_AGE_WARNING) {
+                newState = VISUAL_STATES.WARNING;
+            }
+            
+            if (newState !== this.visualState) {
+                this.visualState = newState;
+                element.className = `letter ${newState}`;
+                element.dataset.age = Math.floor(age / 1000) + 's';
+            }
+            
+            return age;
+        }
+    };
 }
 
 /**

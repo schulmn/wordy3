@@ -22,7 +22,18 @@ export const GAME_CONFIG = {
     FULL_TRAY_DROP_INTERVAL: 6000, // 6 seconds
     DEFAULT_SEQUENCE_LENGTH: 55,
     MIN_SEQUENCE_LENGTH: 30,
-    MAX_SEQUENCE_LENGTH: 100
+    MAX_SEQUENCE_LENGTH: 100,
+    LETTER_AGE_WARNING: 8000, // 8 seconds before warning
+    LETTER_AGE_DANGER: 12000 // 12 seconds before danger
+};
+
+/**
+ * Visual state constants
+ */
+export const VISUAL_STATES = {
+    NORMAL: 'normal',
+    WARNING: 'warning',
+    DANGER: 'danger'
 };
 
 /**
