@@ -43,7 +43,11 @@ class WordyGame {
         // Start letter state updates
         this.startLetterStateUpdates();
         
-        this.addNextLetter();
+        // Add initial minimum letters
+        while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
+               this.letterSequence.length > 0) {
+            this.addNextLetter();
+        }
     }
     
     startLetterStateUpdates() {
