@@ -9,6 +9,7 @@ class WordyGame {
         this.isGameRunning = false;
         this.nextLetterTimer = null;
         this.updateInterval = null;
+        this.fullTrayTimestamp = null;
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -39,6 +40,7 @@ class WordyGame {
         this.letterSequence = generateLetterSequence(GAME_CONFIG.DEFAULT_SEQUENCE_LENGTH);
         this.startButton.disabled = true;
         this.wordInput.focus();
+        this.fullTrayTimestamp = null;
         
         // Start letter state updates
         this.startLetterStateUpdates();
@@ -53,42 +55,58 @@ class WordyGame {
     startLetterStateUpdates() {
         this.updateInterval = setInterval(() => {
             if (this.isGameRunning && this.currentLetters.length === GAME_CONFIG.MAX_LETTERS) {
+                // Initialize fullTrayTimestamp if not set
+                if (!this.fullTrayTimestamp) {
+                    this.fullTrayTimestamp = Date.now();
+                    return;
+                }
+
                 const currentTime = Date.now();
+                const trayAge = currentTime - this.fullTrayTimestamp;
                 
                 // Find the oldest letter
                 let oldestLetter = this.currentLetters[0];
-                let oldestAge = currentTime - oldestLetter.timestamp;
-                
                 for (let i = 1; i < this.currentLetters.length; i++) {
-                    const age = currentTime - this.currentLetters[i].timestamp;
-                    if (age > oldestAge) {
-                        oldestAge = age;
+                    if (this.currentLetters[i].timestamp < oldestLetter.timestamp) {
                         oldestLetter = this.currentLetters[i];
                     }
                 }
                 
-                // Update oldest letter's state
-                if (oldestAge >= GAME_CONFIG.LETTER_AGE_DANGER) {
-                    // Remove the letter if it's reached danger age
+                // Calculate remaining time
+                const remainingTime = Math.ceil((GAME_CONFIG.LETTER_AGE_DANGER - trayAge) / 1000);
+                
+                // Update oldest letter's state based on tray age
+                if (trayAge >= GAME_CONFIG.LETTER_AGE_DANGER) {
+                    // Remove the letter if tray has been full for 6 seconds
                     const index = this.currentLetters.indexOf(oldestLetter);
                     oldestLetter.element.remove();
                     this.currentLetters.splice(index, 1);
+                    this.fullTrayTimestamp = null;
                     
-                    // Schedule next letter drop
+                    // Immediately add new letter
                     if (this.letterSequence.length > 0) {
-                        this.scheduleNextLetter(GAME_CONFIG.LETTER_DROP_INTERVAL);
+                        this.addNextLetter();
                     }
-                } else if (oldestAge >= GAME_CONFIG.LETTER_AGE_WARNING) {
-                    // Only update the oldest letter's state
+                } else if (trayAge >= GAME_CONFIG.LETTER_AGE_WARNING) {
+                    // Warning state after 3 seconds
                     oldestLetter.element.className = `letter ${VISUAL_STATES.WARNING}`;
-                    oldestLetter.element.dataset.age = Math.floor(oldestAge / 1000) + 's';
+                    oldestLetter.element.dataset.age = remainingTime + 's';
                 } else {
-                    // Reset the oldest letter to normal if not yet warning age
+                    // Normal state with countdown
                     oldestLetter.element.className = 'letter';
-                    oldestLetter.element.dataset.age = Math.floor(oldestAge / 1000) + 's';
+                    oldestLetter.element.dataset.age = remainingTime + 's';
                 }
+            } else {
+                // Reset fullTrayTimestamp when tray is not full
+                this.fullTrayTimestamp = null;
+                
+                // Clear any remaining age displays
+                this.currentLetters.forEach(letterObj => {
+                    letterObj.element.className = 'letter';
+                    letterObj.element.dataset.age = '';
+                });
             }
-        }, 1000); // Update every second
+        }, 100); // Update every 100ms for smoother countdown
     }
     
     resetGame() {
@@ -101,9 +119,14 @@ class WordyGame {
         this.wordInput.value = '';
         this.startButton.disabled = false;
         this.timerDisplay.textContent = '0';
+        this.fullTrayTimestamp = null;
         
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
+        }
+        
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
         }
     }
     
@@ -117,13 +140,9 @@ class WordyGame {
         this.currentLetters.push(letterObj);
         this.letterTray.appendChild(letterObj.element);
         
-        if (this.letterSequence.length > 0) {
-            // If we just added the 7th letter, don't schedule next letter
-            // The next letter will be scheduled after the oldest letter is removed
-            if (this.currentLetters.length < GAME_CONFIG.MAX_LETTERS) {
-                this.scheduleNextLetter(GAME_CONFIG.LETTER_DROP_INTERVAL);
-            }
-        } else {
+        if (this.letterSequence.length > 0 && this.currentLetters.length < GAME_CONFIG.MAX_LETTERS) {
+            this.scheduleNextLetter(GAME_CONFIG.LETTER_DROP_INTERVAL);
+        } else if (this.letterSequence.length === 0) {
             this.endGame();
         }
     }
@@ -183,6 +202,9 @@ class WordyGame {
         
         // Clear input
         this.wordInput.value = '';
+        
+        // Reset fullTrayTimestamp since we removed letters
+        this.fullTrayTimestamp = null;
         
         // Ensure minimum letters
         while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
