@@ -23,8 +23,8 @@ export const GAME_CONFIG = {
     DEFAULT_SEQUENCE_LENGTH: 55,
     MIN_SEQUENCE_LENGTH: 30,
     MAX_SEQUENCE_LENGTH: 100,
-    LETTER_AGE_WARNING: 8000, // 8 seconds before warning
-    LETTER_AGE_DANGER: 12000 // 12 seconds before danger
+    LETTER_AGE_WARNING: 3000, // 3 seconds before warning when tray is full
+    LETTER_AGE_DANGER: 6000 // 6 seconds before danger when tray is full (matches FULL_TRAY_DROP_INTERVAL)
 };
 
 /**

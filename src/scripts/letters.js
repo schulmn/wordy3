@@ -44,32 +44,11 @@ export function createLetterElement(letter) {
     element.dataset.points = LETTER_POINTS[letter];
     element.textContent = letter;
     
-    const timestamp = Date.now();
-    element.dataset.timestamp = timestamp;
-    
     return {
         element,
         letter,
-        timestamp,
-        visualState: VISUAL_STATES.NORMAL,
-        updateVisualState: function(currentTime) {
-            const age = currentTime - this.timestamp;
-            let newState = VISUAL_STATES.NORMAL;
-            
-            if (age >= GAME_CONFIG.LETTER_AGE_DANGER) {
-                newState = VISUAL_STATES.DANGER;
-            } else if (age >= GAME_CONFIG.LETTER_AGE_WARNING) {
-                newState = VISUAL_STATES.WARNING;
-            }
-            
-            if (newState !== this.visualState) {
-                this.visualState = newState;
-                element.className = `letter ${newState}`;
-                element.dataset.age = Math.floor(age / 1000) + 's';
-            }
-            
-            return age;
-        }
+        timestamp: Date.now(),
+        visualState: VISUAL_STATES.NORMAL
     };
 }
 

@@ -52,32 +52,48 @@ class WordyGame {
     
     startLetterStateUpdates() {
         this.updateInterval = setInterval(() => {
-            if (this.isGameRunning) {
+            if (this.isGameRunning && this.currentLetters.length >= GAME_CONFIG.MAX_LETTERS) {
                 const currentTime = Date.now();
                 
-                // Update visual states and find oldest letter
-                let oldestAge = 0;
-                let oldestIndex = -1;
-                
-                this.currentLetters.forEach((letterObj, index) => {
-                    const age = letterObj.updateVisualState(currentTime);
-                    if (age > oldestAge) {
-                        oldestAge = age;
-                        oldestIndex = index;
-                    }
+                // Reset all letters to normal state except the oldest
+                this.currentLetters.forEach(letterObj => {
+                    letterObj.element.className = 'letter';
+                    letterObj.visualState = VISUAL_STATES.NORMAL;
+                    letterObj.element.dataset.age = '';
                 });
                 
-                // Remove oldest danger letter if it exists
-                if (oldestIndex !== -1 && 
-                    this.currentLetters[oldestIndex].visualState === VISUAL_STATES.DANGER) {
-                    this.currentLetters[oldestIndex].element.remove();
-                    this.currentLetters.splice(oldestIndex, 1);
+                // Find and update only the oldest letter
+                let oldestLetter = this.currentLetters[0];
+                let oldestAge = currentTime - oldestLetter.timestamp;
+                
+                for (let i = 1; i < this.currentLetters.length; i++) {
+                    const age = currentTime - this.currentLetters[i].timestamp;
+                    if (age > oldestAge) {
+                        oldestAge = age;
+                        oldestLetter = this.currentLetters[i];
+                    }
+                }
+                
+                // Update oldest letter's state
+                if (oldestAge >= GAME_CONFIG.LETTER_AGE_DANGER) {
+                    oldestLetter.visualState = VISUAL_STATES.DANGER;
+                    oldestLetter.element.className = `letter ${VISUAL_STATES.DANGER}`;
+                    oldestLetter.element.dataset.age = Math.floor(oldestAge / 1000) + 's';
+                    
+                    // Remove the letter if it's in danger state
+                    const index = this.currentLetters.indexOf(oldestLetter);
+                    oldestLetter.element.remove();
+                    this.currentLetters.splice(index, 1);
                     
                     // Ensure minimum letters
                     while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
                            this.letterSequence.length > 0) {
                         this.addNextLetter();
                     }
+                } else if (oldestAge >= GAME_CONFIG.LETTER_AGE_WARNING) {
+                    oldestLetter.visualState = VISUAL_STATES.WARNING;
+                    oldestLetter.element.className = `letter ${VISUAL_STATES.WARNING}`;
+                    oldestLetter.element.dataset.age = Math.floor(oldestAge / 1000) + 's';
                 }
             }
         }, 1000); // Update every second
