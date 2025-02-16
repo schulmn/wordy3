@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordy3</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Wordy3</h1>
+            <div class="score-display">Score: <span id="score">0</span></div>
+        </header>
+        
+        <main>
+            <div class="letter-tray" id="letter-tray">
+                <!-- Letters will be dynamically added here -->
+            </div>
+            
+            <div class="word-input-area">
+                <input type="text" id="word-input" placeholder="Type your word here">
+                <button id="submit-word">Submit</button>
+            </div>
+        </main>
+        
+        <div class="game-controls">
+            <button id="start-game">Start Game</button>
+            <button id="reset-game">Reset</button>
+        </div>
+    </div>
+    
+    <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
