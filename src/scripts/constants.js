@@ -46,6 +46,18 @@ export const WORD_LENGTH_MULTIPLIERS = {
 };
 
 /**
+ * Game states
+ */
+export const GAME_STATES = {
+    IDLE: 'idle',
+    INITIALS_INPUT: 'initials_input',
+    LOADING: 'loading',
+    PLAYING: 'playing',
+    ERROR: 'error',
+    GAME_OVER: 'game_over'
+};
+
+/**
  * Letter point value colors
  */
 export const LETTER_POINT_COLORS = {

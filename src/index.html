@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
+    <div id="initials-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Enter Your Initials</h2>
+            <input type="text" id="initials-input" maxlength="3" placeholder="AAA">
+            <button id="submit-initials">Start Game</button>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Game Over!</h2>
+            <div class="game-stats">
+                <p>Player: <span id="final-initials"></span></p>
+                <p>Final Score: <span id="final-score"></span></p>
+                <p>Best Word: <span id="best-word"></span> (<span id="best-word-score"></span> points)</p>
+            </div>
+            <button id="play-again">Play Again</button>
+        </div>
+    </div>
+
     <div id="loading-overlay" class="loading-overlay hidden">
         <div class="loading-content">
             <div class="loading-spinner"></div>
@@ -23,6 +43,9 @@
         <main>
             <div class="timer-display" id="timer-display">
                 Next letter in: <span id="next-letter-timer">3</span>s
+            </div>
+            <div class="next-letter-preview" id="next-letter-preview">
+                Next: <span class="next-letter"></span>
             </div>
             <div class="letter-tray" id="letter-tray">
                 <!-- Letters will be dynamically added here -->

@@ -1,16 +1,18 @@
-import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS } from './constants.js';
+import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS, LETTER_POINTS, LETTER_POINT_COLORS, GAME_STATES } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 import { dictionary } from './dictionary.js';
 
 class WordyGame {
     constructor() {
         this.letterSequence = [];
-        this.currentLetters = []; // Now stores letter objects instead of just strings
+        this.currentLetters = [];
         this.score = 0;
-        this.isGameRunning = false;
+        this.gameState = GAME_STATES.IDLE;
         this.nextLetterTimer = null;
         this.updateInterval = null;
         this.fullTrayTimestamp = null;
+        this.playerInitials = '';
+        this.bestWord = { word: '', score: 0 };
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -20,12 +22,30 @@ class WordyGame {
         this.resetButton = document.getElementById('reset-game');
         this.scoreDisplay = document.getElementById('score');
         this.timerDisplay = document.getElementById('next-letter-timer');
+        this.nextLetterPreview = document.getElementById('next-letter-preview');
+        this.previewLetter = this.nextLetterPreview.querySelector('.next-letter');
+        
+        // Modal elements
+        this.initialsModal = document.getElementById('initials-modal');
+        this.initialsInput = document.getElementById('initials-input');
+        this.submitInitialsButton = document.getElementById('submit-initials');
+        this.gameOverModal = document.getElementById('game-over-modal');
+        this.finalInitialsDisplay = document.getElementById('final-initials');
+        this.finalScoreDisplay = document.getElementById('final-score');
+        this.bestWordDisplay = document.getElementById('best-word');
+        this.bestWordScoreDisplay = document.getElementById('best-word-score');
+        this.playAgainButton = document.getElementById('play-again');
         
         this.initializeEventListeners();
     }
     
     initializeEventListeners() {
-        this.startButton.addEventListener('click', () => this.startGame());
+        this.startButton.addEventListener('click', () => {
+            this.gameState = GAME_STATES.INITIALS_INPUT;
+            this.initialsModal.classList.remove('hidden');
+            this.initialsInput.focus();
+        });
+
         this.resetButton.addEventListener('click', () => this.resetGame());
         this.submitButton.addEventListener('click', () => this.submitWord());
         
@@ -39,9 +59,51 @@ class WordyGame {
         this.wordInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
         });
+
+        // Initials input handling
+        this.initialsInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        });
+
+        this.submitInitialsButton.addEventListener('click', () => {
+            const initials = this.initialsInput.value.toUpperCase();
+            if (initials.length === 3) {
+                this.playerInitials = initials;
+                this.initialsModal.classList.add('hidden');
+                this.startGameFlow();
+            }
+        });
+
+        this.initialsInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && this.initialsInput.value.length === 3) {
+                this.playerInitials = this.initialsInput.value.toUpperCase();
+                this.initialsModal.classList.add('hidden');
+                this.startGameFlow();
+            }
+        });
+
+        this.playAgainButton.addEventListener('click', () => {
+            this.gameOverModal.classList.add('hidden');
+            this.resetGame();
+            this.gameState = GAME_STATES.INITIALS_INPUT;
+            this.initialsModal.classList.remove('hidden');
+            this.initialsInput.value = this.playerInitials;
+            this.initialsInput.focus();
+        });
+    }
+
+    updateNextLetterPreview() {
+        if (this.letterSequence.length > 0) {
+            this.previewLetter.textContent = this.letterSequence[0];
+            this.nextLetterPreview.style.display = 'block';
+        } else {
+            this.nextLetterPreview.style.display = 'none';
+        }
     }
     
-    async startGame() {
+    async startGameFlow() {
+        this.gameState = GAME_STATES.LOADING;
+        
         // Show loading overlay
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingError = loadingOverlay.querySelector('.loading-error');
@@ -55,10 +117,13 @@ class WordyGame {
                 throw new Error('Dictionary failed to initialize');
             }
 
-            this.isGameRunning = true;
+            this.gameState = GAME_STATES.PLAYING;
             this.letterSequence = generateLetterSequence(GAME_CONFIG.DEFAULT_SEQUENCE_LENGTH);
             this.startButton.disabled = true;
             this.wordInput.focus();
+            
+            // Update next letter preview
+            this.updateNextLetterPreview();
             
             // Start letter state updates
             this.startLetterStateUpdates();
@@ -69,6 +134,7 @@ class WordyGame {
                 this.addNextLetter();
             }
         } catch (error) {
+            this.gameState = GAME_STATES.ERROR;
             loadingError.textContent = error.message;
             loadingError.classList.remove('hidden');
             return;
@@ -79,7 +145,7 @@ class WordyGame {
     
     startLetterStateUpdates() {
         this.updateInterval = setInterval(() => {
-            if (!this.isGameRunning) return;
+            if (this.gameState !== GAME_STATES.PLAYING) return;
 
             // Check if we should end the game (no more letters in sequence and tray is empty)
             if (this.letterSequence.length === 0 && this.currentLetters.length === 0) {
@@ -146,15 +212,18 @@ class WordyGame {
     }
     
     resetGame() {
-        this.isGameRunning = false;
+        this.gameState = GAME_STATES.IDLE;
         this.letterSequence = [];
         this.currentLetters = [];
         this.score = 0;
+        this.bestWord = { word: '', score: 0 };
         this.scoreDisplay.textContent = '0';
         this.letterTray.innerHTML = '';
         this.wordInput.value = '';
         this.startButton.disabled = false;
         this.timerDisplay.textContent = '0';
+        this.nextLetterPreview.style.display = 'none';
+        
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
         }
@@ -165,7 +234,7 @@ class WordyGame {
     }
     
     addNextLetter() {
-        if (!this.isGameRunning) {
+        if (this.gameState !== GAME_STATES.PLAYING) {
             return;
         }
         
@@ -184,6 +253,9 @@ class WordyGame {
         const letterObj = createLetterElement(nextLetter);
         this.currentLetters.push(letterObj);
         this.letterTray.appendChild(letterObj.element);
+        
+        // Update the next letter preview
+        this.updateNextLetterPreview();
         
         // Schedule next letter if we're not at max capacity
         if (this.currentLetters.length < GAME_CONFIG.MAX_LETTERS && this.letterSequence.length > 0) {
@@ -214,7 +286,7 @@ class WordyGame {
     }
     
     submitWord() {
-        if (!this.isGameRunning) return;
+        if (this.gameState !== GAME_STATES.PLAYING) return;
         
         const word = this.wordInput.value.toUpperCase();
         const input = this.wordInput;
@@ -250,6 +322,11 @@ class WordyGame {
                 Math.ceil(basePoints * multiplier) : 
                 basePoints * multiplier;
             this.score += finalPoints;
+
+            // Update best word if current word has higher score
+            if (finalPoints > this.bestWord.score) {
+                this.bestWord = { word: word, score: finalPoints };
+            }
             
             // Show multiplier feedback
             input.classList.add('valid-flash');
@@ -286,7 +363,7 @@ class WordyGame {
     }
     
     endGame() {
-        this.isGameRunning = false;
+        this.gameState = GAME_STATES.GAME_OVER;
         this.startButton.disabled = false;
         
         if (this.nextLetterTimer) {
@@ -296,8 +373,15 @@ class WordyGame {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
         }
+
+        // Update game over modal
+        this.finalInitialsDisplay.textContent = this.playerInitials;
+        this.finalScoreDisplay.textContent = this.score;
+        this.bestWordDisplay.textContent = this.bestWord.word || 'None';
+        this.bestWordScoreDisplay.textContent = this.bestWord.score;
         
-        alert(`Game Over! Final Score: ${this.score}`);
+        // Show game over modal
+        this.gameOverModal.classList.remove('hidden');
     }
 }
 
