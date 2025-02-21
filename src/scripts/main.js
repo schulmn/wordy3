@@ -34,7 +34,7 @@ class WordyGame {
         this.finalScoreDisplay = document.getElementById('final-score');
         this.bestWordDisplay = document.getElementById('best-word');
         this.bestWordScoreDisplay = document.getElementById('best-word-score');
-        this.playAgainButton = document.getElementById('play-again');
+        this.closeGameOverButton = document.getElementById('close-game-over');
         
         this.initializeEventListeners();
     }
@@ -82,13 +82,8 @@ class WordyGame {
             }
         });
 
-        this.playAgainButton.addEventListener('click', () => {
+        this.closeGameOverButton.addEventListener('click', () => {
             this.gameOverModal.classList.add('hidden');
-            this.resetGame();
-            this.gameState = GAME_STATES.INITIALS_INPUT;
-            this.initialsModal.classList.remove('hidden');
-            this.initialsInput.value = this.playerInitials;
-            this.initialsInput.focus();
         });
     }
 
