@@ -1,4 +1,4 @@
-import { GAME_CONFIG, VISUAL_STATES } from './constants.js';
+import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 import { dictionary } from './dictionary.js';
 
@@ -11,7 +11,6 @@ class WordyGame {
         this.nextLetterTimer = null;
         this.updateInterval = null;
         this.fullTrayTimestamp = null;
-        this.multiplier = 1;
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -60,8 +59,6 @@ class WordyGame {
             this.letterSequence = generateLetterSequence(GAME_CONFIG.DEFAULT_SEQUENCE_LENGTH);
             this.startButton.disabled = true;
             this.wordInput.focus();
-            this.fullTrayTimestamp = null;
-            this.multiplier = 1;
             
             // Start letter state updates
             this.startLetterStateUpdates();
@@ -90,17 +87,15 @@ class WordyGame {
                 return;
             }
 
-            // Only handle letter aging when tray is full (7 letters)
-            if (this.currentLetters.length === GAME_CONFIG.MAX_LETTERS) {
-                // Initialize fullTrayTimestamp if not set and tray is full
+            // Handle letter aging when tray is full OR when we're out of sequence letters
+            if (this.currentLetters.length === GAME_CONFIG.MAX_LETTERS || 
+                (this.letterSequence.length === 0 && this.currentLetters.length > 0)) {
+                // Initialize fullTrayTimestamp if not set
                 if (!this.fullTrayTimestamp) {
                     this.fullTrayTimestamp = Date.now();
                     return;
                 }
 
-                const currentTime = Date.now();
-                const trayAge = currentTime - this.fullTrayTimestamp;
-                
                 // Find the oldest letter
                 let oldestLetter = this.currentLetters[0];
                 for (let i = 1; i < this.currentLetters.length; i++) {
@@ -108,26 +103,32 @@ class WordyGame {
                         oldestLetter = this.currentLetters[i];
                     }
                 }
+
+                const currentTime = Date.now();
+                const trayAge = currentTime - this.fullTrayTimestamp;
                 
                 // Calculate remaining time
                 const remainingTime = Math.ceil((GAME_CONFIG.LETTER_AGE_DANGER - trayAge) / 1000);
                 
                 // Update oldest letter's state based on tray age
                 if (trayAge >= GAME_CONFIG.LETTER_AGE_DANGER) {
-                    // Remove the letter if it's been around for 6 seconds
+                    // Remove the letter if tray has been full for 6 seconds
                     const index = this.currentLetters.indexOf(oldestLetter);
                     oldestLetter.element.remove();
                     this.currentLetters.splice(index, 1);
                     this.fullTrayTimestamp = null;
                     
-                    // If we have letters in sequence, add a new one
-                    if (this.letterSequence.length > 0) {
+                    // If we have letters in sequence and not at max capacity, add a new one
+                    if (this.letterSequence.length > 0 && 
+                        this.currentLetters.length < GAME_CONFIG.MAX_LETTERS) {
                         this.addNextLetter();
                     }
                     // Check if game should end after removing letter
                     else if (this.letterSequence.length === 0 && this.currentLetters.length === 0) {
                         this.endGame();
                     }
+                    // Reset timestamp to start aging the next oldest letter
+                    this.fullTrayTimestamp = null;
                 } else if (trayAge >= GAME_CONFIG.LETTER_AGE_WARNING) {
                     // Warning state after 3 seconds
                     oldestLetter.element.className = `letter ${VISUAL_STATES.WARNING}`;
@@ -138,13 +139,8 @@ class WordyGame {
                     oldestLetter.element.dataset.age = remainingTime + 's';
                 }
             } else {
-                // Reset fullTrayTimestamp and clear all letter states when tray is not full
+                // Reset fullTrayTimestamp when we're not in an aging state
                 this.fullTrayTimestamp = null;
-                // Reset all letters to normal state
-                this.currentLetters.forEach(letterObj => {
-                    letterObj.element.className = 'letter';
-                    letterObj.element.dataset.age = '';
-                });
             }
         }, 100); // Update every 100ms for smoother countdown
     }
@@ -154,14 +150,11 @@ class WordyGame {
         this.letterSequence = [];
         this.currentLetters = [];
         this.score = 0;
-        this.multiplier = 1;
         this.scoreDisplay.textContent = '0';
         this.letterTray.innerHTML = '';
         this.wordInput.value = '';
         this.startButton.disabled = false;
         this.timerDisplay.textContent = '0';
-        this.fullTrayTimestamp = null;
-        
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
         }
@@ -250,25 +243,34 @@ class WordyGame {
         });
 
         // Validate word and update score
-        const points = calculateWordPoints(word);
+        const basePoints = calculateWordPoints(word);
         if (dictionary.isValidWord(word)) {
-            this.score += points * this.multiplier;
+            const multiplier = WORD_LENGTH_MULTIPLIERS[word.length] || 1;
+            const finalPoints = multiplier === 1.5 ? 
+                Math.ceil(basePoints * multiplier) : 
+                basePoints * multiplier;
+            this.score += finalPoints;
+            
+            // Show multiplier feedback
             input.classList.add('valid-flash');
             setTimeout(() => input.classList.remove('valid-flash'), 500);
-            this.multiplier++; // Increase multiplier for next valid word
+            
+            // Update score display with multiplier info if applicable
+            if (multiplier > 1) {
+                this.scoreDisplay.textContent = `${this.score} (${basePoints} × ${multiplier})`;
+                setTimeout(() => this.scoreDisplay.textContent = this.score, 2000);
+            } else {
+                this.scoreDisplay.textContent = this.score;
+            }
         } else {
-            this.score -= points; // Subtract base points for invalid words
+            this.score -= basePoints; // Subtract base points for invalid words
             input.classList.add('invalid-flash');
             setTimeout(() => input.classList.remove('invalid-flash'), 500);
-            this.multiplier = 1; // Reset multiplier on invalid word
+            this.scoreDisplay.textContent = this.score;
         }
-        this.scoreDisplay.textContent = this.score;
         
         // Clear input
         this.wordInput.value = '';
-        
-        // Reset fullTrayTimestamp since we removed letters
-        this.fullTrayTimestamp = null;
         
         // First ensure minimum letters (4)
         while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 

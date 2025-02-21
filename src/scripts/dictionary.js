@@ -1,4 +1,4 @@
-import { validWords } from './wordlist.js_backup';
+import { validWords } from './wordlist.js';
 
 export const dictionary = {
     wordList: null,

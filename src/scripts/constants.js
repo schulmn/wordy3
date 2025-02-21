@@ -37,6 +37,15 @@ export const VISUAL_STATES = {
 };
 
 /**
+ * Word length multiplier values
+ */
+export const WORD_LENGTH_MULTIPLIERS = {
+    5: 1.5, // 5-letter words get 1.5x points (rounded up)
+    6: 2.0, // 6-letter words get 2x points
+    7: 3.0  // 7-letter words get 3x points
+};
+
+/**
  * Letter point value colors
  */
 export const LETTER_POINT_COLORS = {

@@ -1,6 +1,0 @@
-export const validWords = new Set([
-    'WORD', 'LIST', 'TEST', 'GAME', 'PLAY',
-    'SCORE', 'LETTER', 'VALID', 'POINT', 'BONUS',
-    'DOUBLE', 'TRIPLE', 'SCRABBLE', 'DICTIONARY',
-    'MULTIPLIER', 'CHALLENGE', 'VOCABULARY', 'STRATEGY'
-]);
