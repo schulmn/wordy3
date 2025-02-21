@@ -88,12 +88,7 @@ class WordyGame {
     }
 
     updateNextLetterPreview() {
-        if (this.letterSequence.length > 0) {
-            this.previewLetter.textContent = this.letterSequence[0];
-            this.nextLetterPreview.style.display = 'block';
-        } else {
-            this.nextLetterPreview.style.display = 'none';
-        }
+        this.previewLetter.textContent = this.letterSequence.length > 0 ? this.letterSequence[0] : '';
     }
     
     async startGameFlow() {
@@ -217,7 +212,7 @@ class WordyGame {
         this.wordInput.value = '';
         this.startButton.disabled = false;
         this.timerDisplay.textContent = '0';
-        this.nextLetterPreview.style.display = 'none';
+        this.previewLetter.textContent = '';
         
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
