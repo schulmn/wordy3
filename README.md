@@ -90,6 +90,16 @@ git checkout -b recovery/feature-attempt2 v0.X.0
 - Invalid words and dropped letters reset multipliers
 - Multiple scoring multipliers can stack
 
+### Scoring System
+- Base points are calculated from letter values
+- Valid words:
+  - Earn base points × current multiplier
+  - Increase multiplier by 1 for next word
+- Invalid words:
+  - Subtract base points (no multiplier)
+  - Reset multiplier to 1
+- Consecutive valid words build multiplier chain
+
 ## License
 
 [License details to be added]
