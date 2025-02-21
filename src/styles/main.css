@@ -73,9 +73,8 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 50px;
-    height: 50px;
-    background-color: var(--secondary-color);
+    width: 60px;
+    height: 60px;
     color: white;
     font-size: 1.5rem;
     font-weight: bold;
@@ -84,6 +83,15 @@ h1 {
     transition: all 0.3s ease;
     position: relative;
     animation: letterAppear 0.3s ease-out;
+}
+
+.letter::before {
+    content: attr(data-points);
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.8rem;
+    font-weight: normal;
 }
 
 .letter:hover {
@@ -159,4 +167,87 @@ button:hover {
 
 #reset-game:hover {
     background-color: #c0392b;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.loading-content {
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--border-color);
+    border-top: 5px solid var(--secondary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+.loading-message {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.loading-error {
+    color: #e74c3c;
+    margin-top: 0.5rem;
+}
+
+.loading-error.hidden {
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Word Input Animations */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+@keyframes validFlash {
+    0% { background-color: white; }
+    50% { background-color: #a8e6cf; }
+    100% { background-color: white; }
+}
+
+@keyframes invalidFlash {
+    0% { background-color: white; }
+    50% { background-color: #ffb3b3; }
+    100% { background-color: white; }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+.valid-flash {
+    animation: validFlash 0.5s ease-in-out;
+}
+
+.invalid-flash {
+    animation: invalidFlash 0.5s ease-in-out;
 }

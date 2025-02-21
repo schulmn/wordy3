@@ -37,6 +37,19 @@ export const VISUAL_STATES = {
 };
 
 /**
+ * Letter point value colors
+ */
+export const LETTER_POINT_COLORS = {
+    1: '#4a90e2', // Soft Blue
+    2: '#50c878', // Light Green
+    3: '#f4d03f', // Pale Yellow
+    4: '#e67e22', // Orange
+    5: '#9b59b6', // Light Purple
+    8: '#e74c3c', // Coral/Salmon
+    10: '#c0392b'  // Deep Red
+};
+
+/**
  * Letter frequency distribution for English language
  * Adjusted to create a playable distribution of letters
  */

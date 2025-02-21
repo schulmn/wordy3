@@ -1,4 +1,4 @@
-import { LETTER_POINTS, LETTER_FREQUENCIES, GAME_CONFIG, VISUAL_STATES } from './constants.js';
+import { LETTER_POINTS, LETTER_FREQUENCIES, GAME_CONFIG, VISUAL_STATES, LETTER_POINT_COLORS } from './constants.js';
 
 /**
  * Generates a sequence of letters based on frequency distribution
@@ -41,7 +41,9 @@ function createLetterPool() {
 export function createLetterElement(letter) {
     const element = document.createElement('div');
     element.className = 'letter';
-    element.dataset.points = LETTER_POINTS[letter];
+    const points = LETTER_POINTS[letter];
+    element.dataset.points = points;
+    element.style.backgroundColor = LETTER_POINT_COLORS[points];
     element.textContent = letter;
     
     return {
