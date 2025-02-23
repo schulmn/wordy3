@@ -23,7 +23,16 @@
                 <p>Final Score: <span id="final-score"></span></p>
                 <p>Best Word: <span id="best-word"></span> (<span id="best-word-score"></span> points)</p>
             </div>
-                <button id="close-game-over">OK</button>
+            <div class="game-history">
+                <h3>Game History</h3>
+                <div id="complete-history"></div>
+                <div class="points-breakdown">
+                    <p>Points from valid words: <span id="valid-points">0</span></p>
+                    <p>Points lost from invalid words: <span id="invalid-points">0</span></p>
+                    <p>Points lost from drops: <span id="drop-points">0</span></p>
+                </div>
+            </div>
+            <button id="close-game-over">OK</button>
         </div>
     </div>
 
@@ -37,7 +46,10 @@
     <div class="game-container">
         <header>
             <h1>Wordy3</h1>
-            <div class="score-display">Score: <span id="score">0</span></div>
+            <div class="game-info">
+                <div class="score-display">Score: <span id="score">0</span></div>
+                <div class="multiplier-display">Multiplier: <span id="current-multiplier">1.0</span>×</div>
+            </div>
         </header>
         
         <main>
@@ -46,6 +58,7 @@
             </div>
             <div class="next-letter-preview" id="next-letter-preview">
                 Next: <span class="next-letter"></span>
+                <span class="remaining-count"></span>
             </div>
             <div class="letter-tray" id="letter-tray">
                 <!-- Letters will be dynamically added here -->
@@ -60,6 +73,11 @@
         <div class="game-controls">
             <button id="start-game">Start Game</button>
             <button id="reset-game">Reset</button>
+        </div>
+
+        <div class="history-panel">
+            <h3>Scoring History</h3>
+            <div id="recent-events"></div>
         </div>
     </div>
     

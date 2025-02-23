@@ -71,6 +71,15 @@ export const LETTER_POINT_COLORS = {
 };
 
 /**
+ * Multiplier configuration for consecutive valid words
+ */
+export const MULTIPLIER_CONFIG = {
+    BASE: 1.0,
+    INCREMENT: 0.25,
+    MAX: 3.0
+};
+
+/**
  * Letter frequency distribution for English language
  * Adjusted to create a playable distribution of letters
  */

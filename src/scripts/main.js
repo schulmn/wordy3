@@ -1,6 +1,106 @@
-import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS, LETTER_POINTS, LETTER_POINT_COLORS, GAME_STATES } from './constants.js';
+import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS, LETTER_POINTS, LETTER_POINT_COLORS, GAME_STATES, MULTIPLIER_CONFIG } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 import { dictionary } from './dictionary.js';
+
+class GameHistory {
+    constructor() {
+        this.events = [];
+        this.validPoints = 0;
+        this.invalidPoints = 0;
+        this.dropPoints = 0;
+    }
+
+    addEvent(type, details) {
+        const event = {
+            type,
+            details,
+            timestamp: new Date()
+        };
+        this.events.push(event);
+        this.updatePoints(event);
+        this.updateRecentEvents();
+    }
+
+    updatePoints(event) {
+        if (event.type === 'valid') {
+            this.validPoints += event.details.finalPoints;
+        } else if (event.type === 'invalid') {
+            this.invalidPoints += Math.abs(event.details.points);
+        } else if (event.type === 'drop') {
+            this.dropPoints += Math.abs(event.details.points);
+        }
+    }
+
+    updateRecentEvents() {
+        const recentEventsDiv = document.getElementById('recent-events');
+        const lastFiveEvents = this.events.slice(-5).reverse();
+        
+        recentEventsDiv.innerHTML = lastFiveEvents.map(event => {
+            let icon, details, pointsClass;
+            
+            switch (event.type) {
+                case 'valid':
+                    icon = '✓';
+                    details = `${event.details.word}: ${event.details.basePoints} × ${event.details.lengthMultiplier} × ${event.details.streakMultiplier} = ${event.details.finalPoints}`;
+                    pointsClass = 'positive';
+                    break;
+                case 'invalid':
+                    icon = '✗';
+                    details = `${event.details.word}: Invalid (-${Math.abs(event.details.points)})`;
+                    pointsClass = 'negative';
+                    break;
+                case 'drop':
+                    icon = '↓';
+                    details = `${event.details.letter}(-${Math.abs(event.details.points)})`;
+                    pointsClass = 'negative';
+                    break;
+            }
+            
+            return `
+                <div class="history-event">
+                    <span class="event-icon ${event.type}">${icon}</span>
+                    <span class="event-details">${details}</span>
+                    <span class="event-points ${pointsClass}"></span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateGameOverHistory() {
+        const completeHistoryDiv = document.getElementById('complete-history');
+        
+        completeHistoryDiv.innerHTML = this.events.map((event, index) => {
+            let icon, details;
+            
+            switch (event.type) {
+                case 'valid':
+                    icon = '✓';
+                    details = `${event.details.word}: ${event.details.basePoints} × ${event.details.lengthMultiplier} × ${event.details.streakMultiplier} = ${event.details.finalPoints}`;
+                    break;
+                case 'invalid':
+                    icon = '✗';
+                    details = `${event.details.word}: Invalid (-${Math.abs(event.details.points)})`;
+                    break;
+                case 'drop':
+                    icon = '↓';
+                    details = `${event.details.letter}(-${Math.abs(event.details.points)})`;
+                    break;
+            }
+            
+            return `
+                <div class="history-event">
+                    <span class="event-icon ${event.type}">${icon}</span>
+                    <span class="event-details">${index + 1}. ${details}</span>
+                </div>
+            `;
+        }).join('');
+
+        // Update points breakdown
+        document.getElementById('valid-points').textContent = this.validPoints;
+        document.getElementById('invalid-points').textContent = this.invalidPoints;
+        document.getElementById('drop-points').textContent = this.dropPoints;
+    }
+}
 
 class WordyGame {
     constructor() {
@@ -13,6 +113,8 @@ class WordyGame {
         this.fullTrayTimestamp = null;
         this.playerInitials = '';
         this.bestWord = { word: '', score: 0 };
+        this.history = new GameHistory();
+        this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -24,6 +126,8 @@ class WordyGame {
         this.timerDisplay = document.getElementById('next-letter-timer');
         this.nextLetterPreview = document.getElementById('next-letter-preview');
         this.previewLetter = this.nextLetterPreview.querySelector('.next-letter');
+        this.remainingCount = this.nextLetterPreview.querySelector('.remaining-count');
+        this.multiplierDisplay = document.getElementById('current-multiplier');
         
         // Modal elements
         this.initialsModal = document.getElementById('initials-modal');
@@ -89,6 +193,8 @@ class WordyGame {
 
     updateNextLetterPreview() {
         this.previewLetter.textContent = this.letterSequence.length > 0 ? this.letterSequence[0] : '';
+        this.remainingCount.textContent = this.letterSequence.length > 0 ? 
+            `(${this.letterSequence.length} left)` : '';
     }
     
     async startGameFlow() {
@@ -170,9 +276,23 @@ class WordyGame {
                 if (trayAge >= GAME_CONFIG.LETTER_AGE_DANGER) {
                     // Remove the letter if tray has been full for 6 seconds
                     const index = this.currentLetters.indexOf(oldestLetter);
+                    // Subtract points for the dropped letter
+                    const letterPoints = LETTER_POINTS[oldestLetter.letter];
+                    this.score -= letterPoints;
+                    this.scoreDisplay.textContent = this.score;
                     oldestLetter.element.remove();
                     this.currentLetters.splice(index, 1);
                     this.fullTrayTimestamp = null;
+
+                    // Add drop event to history
+                    this.history.addEvent('drop', {
+                        letter: oldestLetter.letter,
+                        points: letterPoints
+                    });
+
+                    // Reset consecutive multiplier
+                    this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
+        this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
                     
                     // If we have letters in sequence and not at max capacity, add a new one
                     if (this.letterSequence.length > 0 && 
@@ -207,12 +327,16 @@ class WordyGame {
         this.currentLetters = [];
         this.score = 0;
         this.bestWord = { word: '', score: 0 };
+        this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
+        this.history = new GameHistory();
         this.scoreDisplay.textContent = '0';
+            this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
         this.letterTray.innerHTML = '';
         this.wordInput.value = '';
         this.startButton.disabled = false;
         this.timerDisplay.textContent = '0';
         this.previewLetter.textContent = '';
+        this.remainingCount.textContent = '';
         
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
@@ -221,6 +345,10 @@ class WordyGame {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
         }
+
+        // Clear history displays
+        document.getElementById('recent-events').innerHTML = '';
+        document.getElementById('complete-history').innerHTML = '';
     }
     
     addNextLetter() {
@@ -244,7 +372,7 @@ class WordyGame {
         this.currentLetters.push(letterObj);
         this.letterTray.appendChild(letterObj.element);
         
-        // Update the next letter preview
+        // Update the next letter preview and remaining count
         this.updateNextLetterPreview();
         
         // Schedule next letter if we're not at max capacity
@@ -307,11 +435,28 @@ class WordyGame {
         // Validate word and update score
         const basePoints = calculateWordPoints(word);
         if (dictionary.isValidWord(word)) {
-            const multiplier = WORD_LENGTH_MULTIPLIERS[word.length] || 1;
-            const finalPoints = multiplier === 1.5 ? 
-                Math.ceil(basePoints * multiplier) : 
-                basePoints * multiplier;
+            const lengthMultiplier = WORD_LENGTH_MULTIPLIERS[word.length] || 1;
+            const streakMultiplier = Math.min(this.currentMultiplier, MULTIPLIER_CONFIG.MAX);
+            const combinedMultiplier = lengthMultiplier * streakMultiplier;
+            const finalPoints = Math.ceil(basePoints * combinedMultiplier);
+            
             this.score += finalPoints;
+
+            // Add valid word event to history
+            this.history.addEvent('valid', {
+                word,
+                basePoints,
+                lengthMultiplier,
+                streakMultiplier,
+                finalPoints
+            });
+
+            // Update consecutive multiplier
+            this.currentMultiplier = Math.min(
+                this.currentMultiplier + MULTIPLIER_CONFIG.INCREMENT,
+                MULTIPLIER_CONFIG.MAX
+            );
+                    this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
 
             // Update best word if current word has higher score
             if (finalPoints > this.bestWord.score) {
@@ -322,15 +467,21 @@ class WordyGame {
             input.classList.add('valid-flash');
             setTimeout(() => input.classList.remove('valid-flash'), 500);
             
-            // Update score display with multiplier info if applicable
-            if (multiplier > 1) {
-                this.scoreDisplay.textContent = `${this.score} (${basePoints} × ${multiplier})`;
-                setTimeout(() => this.scoreDisplay.textContent = this.score, 2000);
-            } else {
-                this.scoreDisplay.textContent = this.score;
-            }
+            // Update score display
+            this.scoreDisplay.textContent = this.score;
         } else {
-            this.score -= basePoints; // Subtract base points for invalid words
+            this.score -= basePoints;
+            
+            // Add invalid word event to history
+            this.history.addEvent('invalid', {
+                word,
+                points: basePoints
+            });
+
+            // Reset consecutive multiplier
+            this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
+            this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
+
             input.classList.add('invalid-flash');
             setTimeout(() => input.classList.remove('invalid-flash'), 500);
             this.scoreDisplay.textContent = this.score;
@@ -369,6 +520,9 @@ class WordyGame {
         this.finalScoreDisplay.textContent = this.score;
         this.bestWordDisplay.textContent = this.bestWord.word || 'None';
         this.bestWordScoreDisplay.textContent = this.bestWord.score;
+        
+        // Update complete history
+        this.history.updateGameOverHistory();
         
         // Show game over modal
         this.gameOverModal.classList.remove('hidden');
