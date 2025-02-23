@@ -24,18 +24,18 @@ body {
 
 .game-container {
     max-width: 800px;
-    margin: 2rem auto;
+    margin: 1rem auto;
     padding: 1rem;
 }
 
 header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 h1 {
     color: var(--primary-color);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .game-info {
@@ -43,7 +43,7 @@ h1 {
     gap: 20px;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .score-display, .multiplier-display {
@@ -65,14 +65,14 @@ h1 {
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     margin-left: auto;
     margin-right: auto;
 }
 
 .history-panel {
     width: 568px;
-    margin: 2rem auto 1rem;
+    margin: 1rem auto;
     padding: 1rem;
     background-color: white;
     border-radius: 8px;
@@ -85,7 +85,7 @@ h1 {
 }
 
 #recent-events {
-    max-height: 150px;
+    max-height: 120px;
     overflow-y: auto;
 }
 
@@ -201,14 +201,14 @@ h1 {
 
 .timer-display {
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     font-size: 1.1rem;
     color: var(--text-color);
 }
 
 .next-letter-preview {
     text-align: right;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     width: 568px;
     margin-left: auto;
     margin-right: auto;
@@ -234,7 +234,7 @@ h1 {
     display: flex;
     gap: 1rem;
     justify-content: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 #word-input {
@@ -264,6 +264,7 @@ button:hover {
     display: flex;
     gap: 1rem;
     justify-content: center;
+    margin-top: 1rem;
 }
 
 #reset-game {
