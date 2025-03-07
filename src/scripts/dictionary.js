@@ -1,7 +1,4 @@
-import { validWords } from './wordlist.js';
-
 export const dictionary = {
-    wordList: null,
     isLoading: false,
     error: null,
 
@@ -9,7 +6,11 @@ export const dictionary = {
         this.isLoading = true;
         this.error = null;
         try {
-            this.wordList = validWords;
+            // Test the API connection with a simple word
+            const testResult = await this.testApiConnection();
+            if (!testResult) {
+                throw new Error('Could not connect to Dictionary API');
+            }
             return true;
         } catch (error) {
             this.error = error.message;
@@ -19,8 +20,28 @@ export const dictionary = {
         }
     },
 
-    isValidWord(word) {
-        if (!this.wordList) return false;
-        return this.wordList.has(word.toUpperCase());
+    async testApiConnection() {
+        try {
+            // Test with a common word - just check if API is reachable
+            const response = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/test');
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
+    },
+
+    async isValidWord(word) {
+        if (!word) return false;
+        
+        try {
+            // Use Free Dictionary API - returns 200 for valid words, 404 for invalid words
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+            
+            // If response is OK (200), the word exists
+            return response.ok;
+        } catch (error) {
+            console.error("Error validating word:", error);
+            throw error; // Propagate the error to be handled by the game
+        }
     }
 };

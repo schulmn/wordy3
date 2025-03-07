@@ -211,7 +211,7 @@ class WordyGame {
         try {
             const success = await dictionary.initialize();
             if (!success) {
-                throw new Error('Dictionary failed to initialize');
+                throw new Error(dictionary.error || 'Dictionary failed to initialize');
             }
 
             this.gameState = GAME_STATES.PLAYING;
@@ -232,7 +232,7 @@ class WordyGame {
             }
         } catch (error) {
             this.gameState = GAME_STATES.ERROR;
-            loadingError.textContent = error.message;
+            loadingError.textContent = error.message || 'Failed to connect to dictionary service';
             loadingError.classList.remove('hidden');
             return;
         } finally {
@@ -404,7 +404,7 @@ class WordyGame {
         }, interval);
     }
     
-    submitWord() {
+    async submitWord() {
         if (this.gameState !== GAME_STATES.PLAYING) return;
         
         const word = this.wordInput.value.toUpperCase();
@@ -435,73 +435,105 @@ class WordyGame {
 
         // Validate word and update score
         const basePoints = calculateWordPoints(word);
-        if (dictionary.isValidWord(word)) {
-            const lengthMultiplier = WORD_LENGTH_MULTIPLIERS[word.length] || 1;
-            const streakMultiplier = Math.min(this.currentMultiplier, MULTIPLIER_CONFIG.MAX);
-            const combinedMultiplier = lengthMultiplier * streakMultiplier;
-            const finalPoints = Math.ceil(basePoints * combinedMultiplier);
+        
+        // Show loading indicator
+        input.classList.add('validating');
+        
+        try {
+            const isValid = await dictionary.isValidWord(word);
             
-            this.score += finalPoints;
+            if (isValid) {
+                const lengthMultiplier = WORD_LENGTH_MULTIPLIERS[word.length] || 1;
+                const streakMultiplier = Math.min(this.currentMultiplier, MULTIPLIER_CONFIG.MAX);
+                const combinedMultiplier = lengthMultiplier * streakMultiplier;
+                const finalPoints = Math.ceil(basePoints * combinedMultiplier);
+                
+                this.score += finalPoints;
 
-            // Add valid word event to history
-            this.history.addEvent('valid', {
-                word,
-                basePoints,
-                lengthMultiplier,
-                streakMultiplier,
-                finalPoints
-            });
+                // Add valid word event to history
+                this.history.addEvent('valid', {
+                    word,
+                    basePoints,
+                    lengthMultiplier,
+                    streakMultiplier,
+                    finalPoints
+                });
 
-            // Update consecutive multiplier
-            this.currentMultiplier = Math.min(
-                this.currentMultiplier + MULTIPLIER_CONFIG.INCREMENT,
-                MULTIPLIER_CONFIG.MAX
-            );
-                    this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
+                // Update consecutive multiplier
+                this.currentMultiplier = Math.min(
+                    this.currentMultiplier + MULTIPLIER_CONFIG.INCREMENT,
+                    MULTIPLIER_CONFIG.MAX
+                );
+                this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
 
-            // Update best word if current word has higher score
-            if (finalPoints > this.bestWord.score) {
-                this.bestWord = { word: word, score: finalPoints };
+                // Update best word if current word has higher score
+                if (finalPoints > this.bestWord.score) {
+                    this.bestWord = { word: word, score: finalPoints };
+                }
+                
+                // Show multiplier feedback
+                input.classList.add('valid-flash');
+                setTimeout(() => input.classList.remove('valid-flash'), 500);
+                
+                // Update score display
+                this.scoreDisplay.textContent = this.score;
+            } else {
+                this.score -= basePoints;
+                
+                // Add invalid word event to history
+                this.history.addEvent('invalid', {
+                    word,
+                    points: basePoints
+                });
+
+                // Reset consecutive multiplier
+                this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
+                this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
+
+                input.classList.add('invalid-flash');
+                setTimeout(() => input.classList.remove('invalid-flash'), 500);
+                this.scoreDisplay.textContent = this.score;
+            }
+        } catch (error) {
+            console.error("Error in word validation:", error);
+            // Show error message to user
+            const errorMessage = document.getElementById('error-message');
+            if (errorMessage) {
+                errorMessage.textContent = 'Dictionary connection error. Please try again.';
+                errorMessage.classList.remove('hidden');
+                setTimeout(() => errorMessage.classList.add('hidden'), 3000);
             }
             
-            // Show multiplier feedback
-            input.classList.add('valid-flash');
-            setTimeout(() => input.classList.remove('valid-flash'), 500);
+            // Return the letters to the tray since we couldn't validate
+            this.returnLettersToTray(wordLetters);
+        } finally {
+            // Remove loading indicator
+            input.classList.remove('validating');
             
-            // Update score display
-            this.scoreDisplay.textContent = this.score;
-        } else {
-            this.score -= basePoints;
+            // Clear input
+            this.wordInput.value = '';
             
-            // Add invalid word event to history
-            this.history.addEvent('invalid', {
-                word,
-                points: basePoints
-            });
+            // First ensure minimum letters (4)
+            while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
+                this.letterSequence.length > 0) {
+                this.addNextLetter();
+            }
 
-            // Reset consecutive multiplier
-            this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
-            this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
-
-            input.classList.add('invalid-flash');
-            setTimeout(() => input.classList.remove('invalid-flash'), 500);
-            this.scoreDisplay.textContent = this.score;
+            // Then ensure we have a working set (5) if possible
+            if (this.currentLetters.length === GAME_CONFIG.MIN_LETTERS && 
+                this.letterSequence.length > 0) {
+                this.addNextLetter(); // Gets us to 5
+            }
         }
-        
-        // Clear input
-        this.wordInput.value = '';
-        
-        // First ensure minimum letters (4)
-        while (this.currentLetters.length < GAME_CONFIG.MIN_LETTERS && 
-               this.letterSequence.length > 0) {
-            this.addNextLetter();
-        }
-
-        // Then ensure we have a working set (5) if possible
-        if (this.currentLetters.length === GAME_CONFIG.MIN_LETTERS && 
-            this.letterSequence.length > 0) {
-            this.addNextLetter(); // Gets us to 5
-        }
+    }
+    
+    // Helper method to return letters to the tray if validation fails
+    returnLettersToTray(letters) {
+        letters.forEach(letter => {
+            const letterObj = createLetterElement(letter);
+            this.currentLetters.push(letterObj);
+            this.letterTray.appendChild(letterObj.element);
+        });
     }
     
     async endGame() {

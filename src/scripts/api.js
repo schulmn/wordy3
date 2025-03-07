@@ -3,7 +3,8 @@
  * Handles communication with the server
  */
 
-const API_BASE_URL = 'http://localhost:3000/api';
+// Use environment variable if available, otherwise fallback to localhost for development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 /**
  * Save game results to the server

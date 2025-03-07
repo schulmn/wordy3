@@ -100,6 +100,10 @@ git checkout -b recovery/feature-attempt2 v0.X.0
   - Reset multiplier to 1
 - Consecutive valid words build multiplier chain
 
+## Deployment
+
+For detailed instructions on how to deploy Wordy3 online, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## License
 
 [License details to be added]
