@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordy3 - Game Results</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .results-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .results-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .results-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .game-stats {
+            margin: 1.5rem 0;
+        }
+        
+        .game-stats p {
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        
+        .game-history {
+            margin-top: 1.5rem;
+        }
+        
+        .game-history h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        #complete-history {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .points-breakdown {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .points-breakdown p {
+            margin: 0.3rem 0;
+            font-size: 1rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .action-buttons button {
+            padding: 0.75rem 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <div class="results-header">
+            <h1>Game Results</h1>
+            <p>Your Wordy3 game has ended. Here's how you did!</p>
+        </div>
+        
+        <div class="game-stats">
+            <p>Player: <span id="final-initials"></span></p>
+            <p>Final Score: <span id="final-score"></span></p>
+            <p>Best Word: <span id="best-word"></span> (<span id="best-word-score"></span> points)</p>
+        </div>
+        
+        <div class="game-history">
+            <h3>Game History</h3>
+            <div id="complete-history"></div>
+            <div class="points-breakdown">
+                <p>Points from valid words: <span id="valid-points">0</span></p>
+                <p>Points lost from invalid words: <span id="invalid-points">0</span></p>
+                <p>Points lost from drops: <span id="drop-points">0</span></p>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button id="play-again">Play Again</button>
+            <button id="share-results">Share Results</button>
+        </div>
+    </div>
+    
+    <script type="module" src="scripts/results.js"></script>
+</body>
+</html>

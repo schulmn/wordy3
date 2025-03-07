@@ -515,17 +515,33 @@ class WordyGame {
             clearInterval(this.updateInterval);
         }
 
-        // Update game over modal
+        // Store game results in localStorage
+        const gameResults = {
+            playerInitials: this.playerInitials,
+            score: this.score,
+            bestWord: this.bestWord,
+            history: {
+                events: this.history.events,
+                validPoints: this.history.validPoints,
+                invalidPoints: this.history.invalidPoints,
+                dropPoints: this.history.dropPoints
+            }
+        };
+        
+        localStorage.setItem('wordy3_game_results', JSON.stringify(gameResults));
+        
+        // Open results page in a new tab
+        window.open('game-results.html', '_blank');
+        
+        // Keep the modal code for backward compatibility, but don't show it
+        // Update game over modal (hidden)
         this.finalInitialsDisplay.textContent = this.playerInitials;
         this.finalScoreDisplay.textContent = this.score;
         this.bestWordDisplay.textContent = this.bestWord.word || 'None';
         this.bestWordScoreDisplay.textContent = this.bestWord.score;
         
-        // Update complete history
+        // Update complete history (hidden)
         this.history.updateGameOverHistory();
-        
-        // Show game over modal
-        this.gameOverModal.classList.remove('hidden');
     }
 }
 
