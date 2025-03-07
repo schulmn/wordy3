@@ -1,11 +1,136 @@
 /**
  * Wordy3 Game Results Page Script
- * Loads and displays game results from localStorage
+ * Loads and displays game results from MongoDB or localStorage
  */
+import { getGameResults, getRecentGames } from './api.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Load game results from localStorage
-    const gameResults = JSON.parse(localStorage.getItem('wordy3_game_results'));
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check if we have a gameId from the URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get('gameId') || localStorage.getItem('wordy3_last_game_id');
+    
+    // Fetch and display recent games
+    await loadRecentGames(gameId);
+    
+    // Load the current game (either from URL, localStorage, or the most recent one)
+    await loadGameResults(gameId);
+    
+    // Set up button event listeners
+    document.getElementById('play-again').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+    
+    document.getElementById('share-results').addEventListener('click', () => {
+        // Get the currently displayed game ID
+        const currentGameId = document.querySelector('.game-item.active')?.dataset.gameId || gameId;
+        
+        // Create shareable text with gameId for direct access
+        const shareText = `I scored ${document.getElementById('final-score').textContent} points in Wordy3! My best word was "${document.getElementById('best-word').textContent}" for ${document.getElementById('best-word-score').textContent} points. Check it out: ${window.location.origin}/game-results.html?gameId=${currentGameId}`;
+        
+        // Check if Web Share API is available
+        if (navigator.share) {
+            navigator.share({
+                title: 'My Wordy3 Game Results',
+                text: shareText
+            }).catch(error => {
+                console.log('Error sharing:', error);
+                // Fallback to clipboard
+                copyToClipboard(shareText);
+            });
+        } else {
+            // Fallback to clipboard
+            copyToClipboard(shareText);
+        }
+    });
+});
+
+/**
+ * Load and display recent games
+ * @param {string} currentGameId - The ID of the current game to highlight
+ */
+async function loadRecentGames(currentGameId) {
+    const recentGamesList = document.getElementById('recent-games-list');
+    
+    try {
+        // Fetch recent games from the server
+        const recentGames = await getRecentGames();
+        
+        if (recentGames.length === 0) {
+            recentGamesList.innerHTML = '<p>No recent games found.</p>';
+            return;
+        }
+        
+        // If we don't have a current gameId, use the most recent one
+        if (!currentGameId && recentGames.length > 0) {
+            currentGameId = recentGames[0].gameId;
+        }
+        
+        // Display the list of recent games
+        recentGamesList.innerHTML = recentGames.map(game => {
+            const date = new Date(game.playedAt);
+            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const isActive = game.gameId === currentGameId;
+            
+            return `
+                <div class="game-item ${isActive ? 'active' : ''}" data-game-id="${game.gameId}">
+                    <div class="game-item-details">
+                        <span>${game.playerInitials}</span>
+                        <span>Best: ${game.bestWord.word || 'None'} (${game.bestWord.score})</span>
+                    </div>
+                    <div class="game-item-info">
+                        <span class="game-item-score">${game.score} pts</span>
+                        <span class="game-item-date">${formattedDate}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click event listeners to game items
+        document.querySelectorAll('.game-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                // Remove active class from all items
+                document.querySelectorAll('.game-item').forEach(i => i.classList.remove('active'));
+                
+                // Add active class to clicked item
+                item.classList.add('active');
+                
+                // Load the selected game
+                const gameId = item.dataset.gameId;
+                await loadGameResults(gameId);
+                
+                // Update URL without reloading the page
+                const url = new URL(window.location);
+                url.searchParams.set('gameId', gameId);
+                window.history.pushState({}, '', url);
+            });
+        });
+    } catch (error) {
+        console.error('Error loading recent games:', error);
+        recentGamesList.innerHTML = '<p>Failed to load recent games. Please try again later.</p>';
+    }
+}
+
+/**
+ * Load and display game results
+ * @param {string} gameId - The ID of the game to load
+ */
+async function loadGameResults(gameId) {
+    let gameResults;
+    
+    if (gameId) {
+        try {
+            // Try to fetch from server first
+            gameResults = await getGameResults(gameId);
+        } catch (error) {
+            console.error('Error fetching game from server:', error);
+            // Fall back to localStorage if server fetch fails
+            gameResults = JSON.parse(localStorage.getItem('wordy3_game_results'));
+        }
+    } else {
+        // Fall back to localStorage if no gameId is available
+        gameResults = JSON.parse(localStorage.getItem('wordy3_game_results'));
+    }
     
     if (!gameResults) {
         // Handle case where no results are found
@@ -65,32 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('valid-points').textContent = gameResults.history.validPoints;
     document.getElementById('invalid-points').textContent = gameResults.history.invalidPoints;
     document.getElementById('drop-points').textContent = gameResults.history.dropPoints;
-    
-    // Set up button event listeners
-    document.getElementById('play-again').addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
-    
-    document.getElementById('share-results').addEventListener('click', () => {
-        // Create shareable text
-        const shareText = `I scored ${gameResults.score} points in Wordy3! My best word was "${gameResults.bestWord.word}" for ${gameResults.bestWord.score} points.`;
-        
-        // Check if Web Share API is available
-        if (navigator.share) {
-            navigator.share({
-                title: 'My Wordy3 Game Results',
-                text: shareText
-            }).catch(error => {
-                console.log('Error sharing:', error);
-                // Fallback to clipboard
-                copyToClipboard(shareText);
-            });
-        } else {
-            // Fallback to clipboard
-            copyToClipboard(shareText);
-        }
-    });
-});
+}
 
 /**
  * Helper function to copy text to clipboard

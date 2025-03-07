@@ -1,6 +1,7 @@
 import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS, LETTER_POINTS, LETTER_POINT_COLORS, GAME_STATES, MULTIPLIER_CONFIG } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 import { dictionary } from './dictionary.js';
+import { saveGameResults } from './api.js';
 
 class GameHistory {
     constructor() {
@@ -503,7 +504,7 @@ class WordyGame {
         }
     }
     
-    endGame() {
+    async endGame() {
         this.gameState = GAME_STATES.GAME_OVER;
         this.startButton.disabled = false;
         
@@ -515,7 +516,7 @@ class WordyGame {
             clearInterval(this.updateInterval);
         }
 
-        // Store game results in localStorage
+        // Create game results object
         const gameResults = {
             playerInitials: this.playerInitials,
             score: this.score,
@@ -528,7 +529,21 @@ class WordyGame {
             }
         };
         
+        // Store in localStorage for backward compatibility
         localStorage.setItem('wordy3_game_results', JSON.stringify(gameResults));
+        
+        // Save to MongoDB and get the gameId
+        try {
+            const response = await saveGameResults(gameResults);
+            
+            // Store the gameId in localStorage for the results page
+            if (response.success) {
+                localStorage.setItem('wordy3_last_game_id', response.gameId);
+            }
+        } catch (error) {
+            console.error('Failed to save game to server:', error);
+            // Continue with local results even if server save fails
+        }
         
         // Open results page in a new tab
         window.open('game-results.html', '_blank');
