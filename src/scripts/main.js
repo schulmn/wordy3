@@ -1,7 +1,7 @@
 import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS, LETTER_POINTS, LETTER_POINT_COLORS, GAME_STATES, MULTIPLIER_CONFIG } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 import { dictionary } from './dictionary.js';
-import { saveGameResults } from './api.js';
+import { saveGameResults, getTodayLetterSequence } from './api.js';
 
 class GameHistory {
     constructor() {
@@ -207,15 +207,21 @@ class WordyGame {
         loadingOverlay.classList.remove('hidden');
         loadingError.classList.add('hidden');
 
-        // Initialize dictionary
         try {
+            // Initialize dictionary
             const success = await dictionary.initialize();
             if (!success) {
                 throw new Error(dictionary.error || 'Dictionary failed to initialize');
             }
 
+            // Get today's letter sequence (based on US Central Time)
+            try {
+                this.letterSequence = await getTodayLetterSequence();
+            } catch (error) {
+                throw new Error('No letter sequence available for today. Please try again tomorrow.');
+            }
+
             this.gameState = GAME_STATES.PLAYING;
-            this.letterSequence = generateLetterSequence(GAME_CONFIG.DEFAULT_SEQUENCE_LENGTH);
             this.startButton.disabled = true;
             this.wordInput.focus();
             
@@ -232,7 +238,7 @@ class WordyGame {
             }
         } catch (error) {
             this.gameState = GAME_STATES.ERROR;
-            loadingError.textContent = error.message || 'Failed to connect to dictionary service';
+            loadingError.textContent = error.message || 'Failed to start game';
             loadingError.classList.remove('hidden');
             return;
         } finally {

@@ -55,6 +55,16 @@ h1 {
     color: var(--success-color);
 }
 
+.daily-info {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #e2f0fd;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+}
+
 .letter-tray {
     display: flex;
     gap: 0.5rem;

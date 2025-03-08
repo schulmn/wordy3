@@ -13,6 +13,7 @@ const __dirname = path.dirname(__filename);
 
 // Import routes
 import gamesRoutes from './routes/games.js';
+import lettersRoutes from './routes/letters.js';
 
 // Initialize Express app
 const app = express();
@@ -41,6 +42,12 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // Routes - placing API routes before static file middleware
 app.use('/api/games', gamesRoutes);
+app.use('/api/letters', lettersRoutes);
+
+// Admin route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 // Static files - moved after API routes
 app.use(express.static(path.join(__dirname, '../public')));

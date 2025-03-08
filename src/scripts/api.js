@@ -75,3 +75,25 @@ export async function getRecentGames() {
     throw error;
   }
 }
+
+/**
+ * Get today's letter sequence (based on US Central Time)
+ * @returns {Promise<Array<string>>} - Today's letter sequence
+ * @throws {Error} - If no sequence is available for today
+ */
+export async function getTodayLetterSequence() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/letters/today`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'No letter sequence available for today');
+    }
+    
+    const data = await response.json();
+    return data.letters;
+  } catch (error) {
+    console.error('Error retrieving letter sequence:', error);
+    throw error;
+  }
+}

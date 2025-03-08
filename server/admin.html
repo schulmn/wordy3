@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wordy3 Admin - Letter Sequences</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    .letter-input {
+      font-family: monospace;
+      height: 100px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .status-panel {
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .warning {
+      background-color: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .success-status {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .calendar-day {
+      padding: 5px;
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+    }
+    .has-sequence {
+      background-color: #d4edda;
+    }
+    .no-sequence {
+      background-color: #f8d7da;
+    }
+    .today {
+      font-weight: bold;
+      border: 2px solid #007bff;
+    }
+    .timezone-info {
+      background-color: #e2f0fd;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+    }
+    .edit-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+    .cancel-btn {
+      background-color: #6c757d;
+      color: white;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wordy3 Admin - Letter Sequences</h1>
+  
+  <div class="timezone-info">
+    All dates are in US Central Time (America/Chicago)
+    <div id="current-time"></div>
+  </div>
+  
+  <div class="status-panel">
+    <h2>System Status</h2>
+    <div id="today-status" class="status-box">
+      <h3>Today's Sequence</h3>
+      <div id="today-status-content">Loading...</div>
+    </div>
+    <div id="upcoming-status" class="status-box">
+      <h3>Upcoming Days</h3>
+      <div id="calendar"></div>
+    </div>
+  </div>
+  
+  <div class="container">
+    <div>
+      <h2 id="form-title">Create New Letter Sequence</h2>
+      <form id="letter-form">
+        <input type="hidden" id="sequence-id">
+        <div class="form-group">
+          <label for="date">Date (US Central Time):</label>
+          <input type="date" id="date" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="letters">Letters (30-100 uppercase letters, no spaces):</label>
+          <textarea id="letters" class="letter-input" required></textarea>
+          <div>Count: <span id="letter-count">0</span></div>
+        </div>
+        
+        <div class="form-group">
+          <button type="submit" id="save-button">Save Letter Sequence</button>
+          <button type="button" id="cancel-button" class="cancel-btn" style="display: none;">Cancel</button>
+        </div>
+      </form>
+      <div id="message"></div>
+    </div>
+    
+    <div>
+      <h2>Existing Letter Sequences</h2>
+      <table id="sequences-table">
+        <thead>
+          <tr>
+            <th>Date (US Central)</th>
+            <th>Letters</th>
+            <th>Length</th>
+            <th>Created At</th>
+            <th>Updated At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Update current time in US Central Time
+    function updateCurrentTime() {
+      const now = new Date();
+      const options = { 
+        timeZone: 'America/Chicago',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+      };
+      
+      document.getElementById('current-time').textContent = 
+        `Current time: ${now.toLocaleString('en-US', options)}`;
+    }
+    
+    // Update time every second
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+    
+    // Debug function to show date information
+    function debugDate(label, date) {
+      console.log(`${label}:`, {
+        date: date,
+        isoString: date.toISOString(),
+        localString: date.toString(),
+        centralString: date.toLocaleString('en-US', { timeZone: 'America/Chicago' }),
+        utcString: new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())).toISOString()
+      });
+    }
+    
+    // Normalize a date to midnight in Central Time
+    function normalizeToCentralTime(date = new Date()) {
+      // Debug the input date
+      let inputDate = date instanceof Date ? date : new Date(date);
+      debugDate('Input date', inputDate);
+      
+      // Get the current date in Central Time
+      const centralTime = new Date(inputDate.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+      debugDate('Central time', centralTime);
+      
+      // Extract year, month, day components from the Central Time date
+      const year = centralTime.getFullYear();
+      const month = centralTime.getMonth(); // 0-indexed
+      const day = centralTime.getDate();
+      
+      // Create a new date with these components, setting time to midnight
+      // We use the local time zone to avoid UTC conversion issues
+      const normalizedDate = new Date(year, month, day, 0, 0, 0, 0);
+      debugDate('Normalized date', normalizedDate);
+      
+      return normalizedDate;
+    }
+    
+    // Get tomorrow's date in Central Time
+    function getTomorrowCentralTime() {
+      const now = new Date();
+      debugDate('Current date', now);
+      
+      const today = normalizeToCentralTime(now);
+      debugDate('Today normalized', today);
+      
+      // Add one day
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      debugDate('Tomorrow', tomorrow);
+      
+      return tomorrow;
+    }
+    
+    // Format date for input field (YYYY-MM-DD)
+    function formatDateForInput(date) {
+      // First normalize to Central Time to ensure correct date
+      const normalizedDate = normalizeToCentralTime(date);
+      debugDate('Date for input', normalizedDate);
+      
+      const year = normalizedDate.getFullYear();
+      const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(normalizedDate.getDate()).padStart(2, '0');
+      
+      const formatted = `${year}-${month}-${day}`;
+      console.log('Formatted date for input:', formatted);
+      return formatted;
+    }
+    
+    // Set default date
+    const tomorrow = getTomorrowCentralTime();
+    document.getElementById('date').valueAsDate = tomorrow;
+
+    // Update letter count
+    document.getElementById('letters').addEventListener('input', function() {
+      const letters = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+      document.getElementById('letter-count').textContent = letters.length;
+    });
+    
+    // Reset form to create mode
+    function resetForm() {
+      document.getElementById('form-title').textContent = 'Create New Letter Sequence';
+      document.getElementById('sequence-id').value = '';
+      document.getElementById('date').valueAsDate = getTomorrowCentralTime();
+      document.getElementById('letters').value = '';
+      document.getElementById('letter-count').textContent = '0';
+      document.getElementById('save-button').textContent = 'Save Letter Sequence';
+      document.getElementById('cancel-button').style.display = 'none';
+      document.getElementById('message').textContent = '';
+      document.getElementById('message').className = '';
+    }
+    
+    // Cancel button handler
+    document.getElementById('cancel-button').addEventListener('click', function() {
+      resetForm();
+    });
+
+    // Form submission
+    document.getElementById('letter-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const messageDiv = document.getElementById('message');
+      const sequenceId = document.getElementById('sequence-id').value;
+      const isEdit = sequenceId !== '';
+      
+      try {
+        const date = document.getElementById('date').value;
+        const letters = document.getElementById('letters').value.toUpperCase().replace(/[^A-Z]/g, '').split('');
+        
+        if (letters.length < 30 || letters.length > 100) {
+          throw new Error('Letter sequence must contain between 30 and 100 letters');
+        }
+        
+        let url = '/api/letters';
+        let method = 'POST';
+        
+        if (isEdit) {
+          url = `/api/letters/${sequenceId}`;
+          method = 'PUT';
+        }
+        
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ date, letters })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} letter sequence`);
+        }
+        
+        messageDiv.className = 'success';
+        messageDiv.textContent = `Letter sequence ${isEdit ? 'updated' : 'created'} successfully!`;
+        
+        // Reset form if it was a create operation
+        if (!isEdit) {
+          resetForm();
+        }
+        
+        // Refresh the table and status
+        loadSequences();
+        checkTodayStatus();
+        createCalendar();
+      } catch (error) {
+        messageDiv.className = 'error';
+        messageDiv.textContent = error.message;
+      }
+    });
+    
+    // Edit sequence
+    async function editSequence(id) {
+      try {
+        const response = await fetch(`/api/letters/${id}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to retrieve sequence');
+        }
+        
+        const sequence = data.sequence;
+        
+        // Update form
+        document.getElementById('form-title').textContent = 'Edit Letter Sequence';
+        document.getElementById('sequence-id').value = sequence._id;
+        document.getElementById('date').value = formatDateForInput(sequence.date);
+        document.getElementById('letters').value = sequence.letters.join('');
+        document.getElementById('letter-count').textContent = sequence.letters.length;
+        document.getElementById('save-button').textContent = 'Update Letter Sequence';
+        document.getElementById('cancel-button').style.display = 'inline-block';
+        
+        // Scroll to form
+        document.getElementById('form-title').scrollIntoView({ behavior: 'smooth' });
+      } catch (error) {
+        console.error('Error editing sequence:', error);
+        alert('Failed to load sequence for editing: ' + error.message);
+      }
+    }
+    
+    // Delete sequence
+    async function deleteSequence(id) {
+      if (!confirm('Are you sure you want to delete this letter sequence?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/letters/${id}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to delete sequence');
+        }
+        
+        // Refresh the table and status
+        loadSequences();
+        checkTodayStatus();
+        createCalendar();
+        
+        alert('Letter sequence deleted successfully');
+      } catch (error) {
+        console.error('Error deleting sequence:', error);
+        alert('Failed to delete sequence: ' + error.message);
+      }
+    }
+
+    // Load existing sequences
+    async function loadSequences() {
+      try {
+        const response = await fetch('/api/letters');
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to load sequences');
+        }
+        
+        const tbody = document.querySelector('#sequences-table tbody');
+        tbody.innerHTML = '';
+        
+        data.sequences.forEach(sequence => {
+          const row = document.createElement('tr');
+          
+          const dateCell = document.createElement('td');
+          // Use our normalizeToCentralTime function to ensure consistent date handling
+          const normalizedDate = normalizeToCentralTime(sequence.date);
+          console.log('Sequence date for table:', sequence._id, normalizedDate);
+          
+          // Format the date for display
+          dateCell.textContent = normalizedDate.toLocaleDateString('en-US', {
+            timeZone: 'America/Chicago',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+          
+          // Add a debug attribute to help troubleshoot
+          dateCell.setAttribute('data-date', formatDateForInput(normalizedDate));
+          
+          const lettersCell = document.createElement('td');
+          lettersCell.textContent = sequence.letters.join('').substring(0, 30) + '...';
+          lettersCell.title = sequence.letters.join('');
+          
+          const lengthCell = document.createElement('td');
+          lengthCell.textContent = sequence.letters.length;
+          
+          const createdAtCell = document.createElement('td');
+          createdAtCell.textContent = new Date(sequence.createdAt).toLocaleString();
+          
+          const updatedAtCell = document.createElement('td');
+          updatedAtCell.textContent = new Date(sequence.updatedAt).toLocaleString();
+          
+          const actionsCell = document.createElement('td');
+          actionsCell.className = 'action-buttons';
+          
+          const editButton = document.createElement('button');
+          editButton.className = 'edit-btn';
+          editButton.textContent = 'Edit';
+          editButton.onclick = () => editSequence(sequence._id);
+          
+          const deleteButton = document.createElement('button');
+          deleteButton.className = 'delete-btn';
+          deleteButton.textContent = 'Delete';
+          deleteButton.onclick = () => deleteSequence(sequence._id);
+          
+          actionsCell.appendChild(editButton);
+          actionsCell.appendChild(deleteButton);
+          
+          row.appendChild(dateCell);
+          row.appendChild(lettersCell);
+          row.appendChild(lengthCell);
+          row.appendChild(createdAtCell);
+          row.appendChild(updatedAtCell);
+          row.appendChild(actionsCell);
+          
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error loading sequences:', error);
+      }
+    }
+
+    // Check today's status
+    async function checkTodayStatus() {
+      const todayStatusContent = document.getElementById('today-status-content');
+      
+      try {
+        const response = await fetch('/api/letters/today');
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Get today's date in Central Time for display
+          const today = normalizeToCentralTime();
+          const todayFormatted = today.toLocaleDateString('en-US', {
+            timeZone: 'America/Chicago',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+          
+          todayStatusContent.innerHTML = `
+            <div class="success-status">
+              <strong>Sequence available for today (${todayFormatted})!</strong><br>
+              Letters: ${data.letters.join('').substring(0, 30)}...<br>
+              Total: ${data.letters.length} letters
+            </div>
+          `;
+        } else {
+          todayStatusContent.innerHTML = `
+            <div class="warning">
+              <strong>Warning: No letter sequence available for today!</strong><br>
+              The game will not start until a sequence is created.
+            </div>
+          `;
+        }
+      } catch (error) {
+        todayStatusContent.innerHTML = `
+          <div class="warning">
+            <strong>Error checking today's sequence:</strong><br>
+            ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    // Create calendar view
+    async function createCalendar() {
+      const calendarDiv = document.getElementById('calendar');
+      calendarDiv.innerHTML = '';
+      
+      // Get all sequences
+      const response = await fetch('/api/letters');
+      const data = await response.json();
+      const sequences = data.sequences || [];
+      
+      // Create a map of dates with sequences
+      const sequenceDates = new Map();
+      sequences.forEach(seq => {
+        // Normalize the date to ensure consistent comparison
+        const date = normalizeToCentralTime(seq.date);
+        const dateString = formatDateForInput(date);
+        console.log('Sequence date:', dateString, 'ID:', seq._id);
+        sequenceDates.set(dateString, {
+          id: seq._id,
+          letters: seq.letters
+        });
+      });
+      
+      // Generate calendar for next 14 days
+      const today = normalizeToCentralTime();
+      console.log('Today for calendar:', formatDateForInput(today));
+      
+      for (let i = 0; i < 14; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() + i);
+        const dateString = formatDateForInput(date);
+        
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        if (i === 0) dayDiv.classList.add('today');
+        
+        if (sequenceDates.has(dateString)) {
+          dayDiv.classList.add('has-sequence');
+          // Make the calendar day clickable to edit the sequence
+          dayDiv.style.cursor = 'pointer';
+          dayDiv.addEventListener('click', () => {
+            const sequenceInfo = sequenceDates.get(dateString);
+            editSequence(sequenceInfo.id);
+          });
+        } else {
+          dayDiv.classList.add('no-sequence');
+          // Make the calendar day clickable to create a sequence for this date
+          dayDiv.style.cursor = 'pointer';
+          dayDiv.addEventListener('click', () => {
+            // Set the date in the form
+            document.getElementById('date').value = dateString;
+            // Focus on the letters input
+            document.getElementById('letters').focus();
+          });
+        }
+        
+        // Display the date in Central Time
+        const displayDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+        
+        dayDiv.innerHTML = `
+          ${displayDate.getDate()}<br>
+          <small>${displayDate.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' })}</small>
+        `;
+        
+        // Add a debug attribute to help troubleshoot
+        dayDiv.setAttribute('data-date', dateString);
+        
+        calendarDiv.appendChild(dayDiv);
+      }
+    }
+
+    // Run on page load
+    loadSequences();
+    checkTodayStatus();
+    createCalendar();
+    
+    // Refresh status every minute
+    setInterval(() => {
+      checkTodayStatus();
+      createCalendar();
+      updateCurrentTime();
+    }, 60000);
+  </script>
+</body>
+</html>
