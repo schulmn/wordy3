@@ -567,24 +567,23 @@ class WordyGame {
             }
         };
         
-        // Store in localStorage for backward compatibility
-        localStorage.setItem('wordy3_game_results', JSON.stringify(gameResults));
-        
         // Save to MongoDB and get the gameId
         try {
             const response = await saveGameResults(gameResults);
             
-            // Store the gameId in localStorage for the results page
             if (response.success) {
-                localStorage.setItem('wordy3_last_game_id', response.gameId);
+                // Open results page in a new tab with gameId as URL parameter
+                window.open(`game-results.html?gameId=${response.gameId}`, '_blank');
+            } else {
+                console.error('Failed to save game to server:', response);
+                // If server save fails, still open results page but it will show an error
+                window.open('game-results.html', '_blank');
             }
         } catch (error) {
             console.error('Failed to save game to server:', error);
-            // Continue with local results even if server save fails
+            // If server save fails, still open results page but it will show an error
+            window.open('game-results.html', '_blank');
         }
-        
-        // Open results page in a new tab
-        window.open('game-results.html', '_blank');
         
         // Keep the modal code for backward compatibility, but don't show it
         // Update game over modal (hidden)

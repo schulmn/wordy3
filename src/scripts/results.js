@@ -1,18 +1,18 @@
 /**
  * Wordy3 Game Results Page Script
- * Loads and displays game results from MongoDB or localStorage
+ * Loads and displays game results from MongoDB
  */
 import { getGameResults, getRecentGames } from './api.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check if we have a gameId from the URL or localStorage
+    // Check if we have a gameId from the URL
     const urlParams = new URLSearchParams(window.location.search);
-    const gameId = urlParams.get('gameId') || localStorage.getItem('wordy3_last_game_id');
+    const gameId = urlParams.get('gameId');
     
     // Fetch and display recent games
     await loadRecentGames(gameId);
     
-    // Load the current game (either from URL, localStorage, or the most recent one)
+    // Load the current game (either from URL or the most recent one)
     await loadGameResults(gameId);
     
     // Set up button event listeners
@@ -120,34 +120,40 @@ async function loadGameResults(gameId) {
     
     if (gameId) {
         try {
-            // Try to fetch from server first
+            // Fetch from server
             gameResults = await getGameResults(gameId);
         } catch (error) {
             console.error('Error fetching game from server:', error);
-            // Fall back to localStorage if server fetch fails
-            gameResults = JSON.parse(localStorage.getItem('wordy3_game_results'));
+            showErrorMessage('Failed to load game results. Please try again later.');
+            return;
         }
     } else {
-        // Fall back to localStorage if no gameId is available
-        gameResults = JSON.parse(localStorage.getItem('wordy3_game_results'));
+        // If no gameId is provided, we'll rely on the most recent game
+        // which should be the first one in the recent games list
+        const recentGamesList = document.getElementById('recent-games-list');
+        const firstGame = recentGamesList.querySelector('.game-item');
+        
+        if (firstGame) {
+            const mostRecentGameId = firstGame.dataset.gameId;
+            try {
+                gameResults = await getGameResults(mostRecentGameId);
+                // Update URL without reloading the page
+                const url = new URL(window.location);
+                url.searchParams.set('gameId', mostRecentGameId);
+                window.history.pushState({}, '', url);
+            } catch (error) {
+                console.error('Error fetching most recent game:', error);
+                showErrorMessage('Failed to load recent game results. Please try again later.');
+                return;
+            }
+        } else {
+            showNoResultsMessage();
+            return;
+        }
     }
     
     if (!gameResults) {
-        // Handle case where no results are found
-        document.querySelector('.results-container').innerHTML = `
-            <div class="results-header">
-                <h1>No Game Results Found</h1>
-                <p>It seems there are no recent game results to display.</p>
-                <div class="action-buttons">
-                    <button id="play-again">Play New Game</button>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('play-again').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-        
+        showNoResultsMessage();
         return;
     }
     
@@ -196,6 +202,28 @@ async function loadGameResults(gameId) {
  * Helper function to copy text to clipboard
  */
 function copyToClipboard(text) {
+    // Try to use the modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                // Show feedback
+                alert('Results copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy text: ', err);
+                // Fall back to the older method
+                fallbackCopyToClipboard(text);
+            });
+    } else {
+        // Fall back to the older method for browsers that don't support clipboard API
+        fallbackCopyToClipboard(text);
+    }
+}
+
+/**
+ * Fallback method for copying to clipboard
+ */
+function fallbackCopyToClipboard(text) {
     // Create temporary element
     const el = document.createElement('textarea');
     el.value = text;
@@ -213,4 +241,47 @@ function copyToClipboard(text) {
     
     // Show feedback
     alert('Results copied to clipboard!');
+}
+
+/**
+ * Show error message when game results can't be loaded
+ */
+function showErrorMessage(message) {
+    document.querySelector('.results-container').innerHTML = `
+        <div class="results-header">
+            <h1>Error Loading Results</h1>
+            <p>${message}</p>
+            <div class="action-buttons">
+                <button id="play-again">Play New Game</button>
+                <button id="try-again">Try Again</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('play-again').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+    
+    document.getElementById('try-again').addEventListener('click', () => {
+        window.location.reload();
+    });
+}
+
+/**
+ * Show message when no game results are found
+ */
+function showNoResultsMessage() {
+    document.querySelector('.results-container').innerHTML = `
+        <div class="results-header">
+            <h1>No Game Results Found</h1>
+            <p>It seems there are no recent game results to display.</p>
+            <div class="action-buttons">
+                <button id="play-again">Play New Game</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('play-again').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
 }
