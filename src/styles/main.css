@@ -69,7 +69,8 @@ h1 {
     display: flex;
     gap: 0.5rem;
     justify-content: center;
-    width: 568px;
+    width: 100%;
+    max-width: 568px;
     min-height: 100px;
     padding: 1rem;
     background-color: white;
@@ -81,7 +82,8 @@ h1 {
 }
 
 .history-panel {
-    width: 568px;
+    width: 100%;
+    max-width: 568px;
     margin: 1rem auto;
     padding: 1rem;
     background-color: white;
@@ -219,7 +221,8 @@ h1 {
 .next-letter-preview {
     text-align: right;
     margin-bottom: 0.5rem;
-    width: 568px;
+    width: 100%;
+    max-width: 568px;
     margin-left: auto;
     margin-right: auto;
     font-size: 1.1rem;
@@ -252,7 +255,8 @@ h1 {
     font-size: 1.2rem;
     border: 2px solid var(--border-color);
     border-radius: 4px;
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
 }
 
 button {
@@ -461,6 +465,63 @@ button:hover {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Media queries for responsive design */
+@media (max-width: 600px) {
+    .game-container {
+        margin: 0.5rem auto;
+        padding: 0.5rem;
+    }
+    
+    .letter {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+    
+    .letter::before {
+        font-size: 0.7rem;
+    }
+    
+    .word-input-area {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    #word-input {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .game-info {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+    }
+    
+    .game-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .game-controls button {
+        width: 100%;
+    }
+    
+    #recent-events {
+        max-height: 150px;
+    }
+    
+    .letter-tray {
+        flex-wrap: wrap;
+    }
 }
 
 /* Word Input Animations */

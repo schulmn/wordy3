@@ -13,6 +13,7 @@
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            width: 95%;
         }
         
         .results-header {
@@ -126,6 +127,41 @@
         
         .action-buttons button {
             padding: 0.75rem 1.5rem;
+        }
+        
+        /* Media queries for responsive design */
+        @media (max-width: 600px) {
+            .results-container {
+                margin: 1rem auto;
+                padding: 1rem;
+            }
+            
+            .results-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .game-stats p {
+                font-size: 1rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: center;
+            }
+            
+            .action-buttons button {
+                width: 100%;
+                padding: 0.5rem 1rem;
+            }
+            
+            .recent-games-list {
+                max-height: 250px;
+            }
+            
+            .game-item {
+                padding: 0.5rem;
+            }
         }
     </style>
 </head>
