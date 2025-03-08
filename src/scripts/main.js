@@ -116,6 +116,7 @@ class WordyGame {
         this.bestWord = { word: '', score: 0 };
         this.history = new GameHistory();
         this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
+        this.processingWord = false; // Flag to track if a word is being processed
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -251,7 +252,8 @@ class WordyGame {
             if (this.gameState !== GAME_STATES.PLAYING) return;
 
             // Check if we should end the game (no more letters in sequence and tray is empty)
-            if (this.letterSequence.length === 0 && this.currentLetters.length === 0) {
+            // Only end the game if we're not currently processing a word
+            if (this.letterSequence.length === 0 && this.currentLetters.length === 0 && !this.processingWord) {
                 this.endGame();
                 return;
             }
@@ -413,6 +415,8 @@ class WordyGame {
     async submitWord() {
         if (this.gameState !== GAME_STATES.PLAYING) return;
         
+        this.processingWord = true; // Set flag to indicate word processing has started
+        
         const word = this.wordInput.value.toUpperCase();
         const input = this.wordInput;
         
@@ -530,6 +534,11 @@ class WordyGame {
                 this.letterSequence.length > 0) {
                 this.addNextLetter(); // Gets us to 5
             }
+            
+            // Set a small timeout to ensure history is fully updated before allowing the game to end
+            setTimeout(() => {
+                this.processingWord = false; // Reset the processing flag
+            }, 100);
         }
     }
     
