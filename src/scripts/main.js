@@ -223,7 +223,7 @@ class WordyGame {
             }
 
             this.gameState = GAME_STATES.PLAYING;
-            this.startButton.disabled = true;
+            this.startButton.style.display = 'none'; // Hide the button instead of disabling it
             this.wordInput.focus();
             
             // Update next letter preview
@@ -342,7 +342,7 @@ class WordyGame {
             this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
         this.letterTray.innerHTML = '';
         this.wordInput.value = '';
-        this.startButton.disabled = false;
+        // Keep the start button hidden to enforce "once per day" concept
         this.timerDisplay.textContent = '0';
         this.previewLetter.textContent = '';
         this.remainingCount.textContent = '';
@@ -553,7 +553,7 @@ class WordyGame {
     
     async endGame() {
         this.gameState = GAME_STATES.GAME_OVER;
-        this.startButton.disabled = false;
+        // Start button remains hidden (removed the line that re-enables it)
         
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
