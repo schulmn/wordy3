@@ -1,6 +1,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import Game from '../db/models/game.model.js';
+import { normalizeToCentralTime } from '../utils/time-utils.js';
 
 const router = express.Router();
 
@@ -14,6 +15,18 @@ router.post('/', async (req, res) => {
     
     // Generate a unique ID for the game
     gameData.gameId = uuidv4();
+    
+    // Normalize the playedAt timestamp to Central Time
+    // This ensures consistency with how we query for "today's games"
+    if (!gameData.playedAt) {
+      gameData.playedAt = new Date(); // Use current time if not provided
+    }
+    
+    // We don't normalize to midnight here because we want to preserve the actual time
+    // But we do want to ensure the date is interpreted in Central Time
+    const playedAtDate = new Date(gameData.playedAt);
+    const centralTime = new Date(playedAtDate.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+    gameData.playedAt = centralTime;
     
     const game = new Game(gameData);
     await game.save();
@@ -39,9 +52,8 @@ router.post('/', async (req, res) => {
  */
 router.get('/today/top', async (req, res) => {
   try {
-    // Get today's date in US Central Time (start of day)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Get today's date normalized to midnight in Central Time
+    const today = normalizeToCentralTime();
     
     // Get top 10 games for today, sorted by score
     const topGames = await Game.find({
