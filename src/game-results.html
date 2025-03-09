@@ -71,8 +71,16 @@
         }
         
         .recent-games h3 {
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             color: var(--primary-color);
+        }
+        
+        .instruction-text {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 0.75rem;
+            margin-top: 0;
         }
         
         .recent-games-list {
@@ -190,6 +198,7 @@
         
         <div class="recent-games">
             <h3>Recent Games</h3>
+            <p class="instruction-text">Click any game to view detailed gameplay</p>
             <div class="recent-games-list" id="recent-games-list">
                 <p>Loading recent games...</p>
             </div>
