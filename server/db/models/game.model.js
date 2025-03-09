@@ -59,4 +59,8 @@ gameSchema.index({ playedAt: -1 });
 gameSchema.index({ score: -1 });
 gameSchema.index({ playerInitials: 1, playedAt: -1 });
 
+// TTL index to automatically delete games older than 3 days
+// The expireAfterSeconds option is in seconds (3 days = 259200 seconds)
+gameSchema.index({ playedAt: 1 }, { expireAfterSeconds: 259200 });
+
 export default mongoose.model('Game', gameSchema);

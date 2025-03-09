@@ -5,6 +5,23 @@ import Game from '../db/models/game.model.js';
 const router = express.Router();
 
 /**
+ * Helper function to delete games older than 3 days
+ */
+async function cleanupOldGames() {
+  try {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    const result = await Game.deleteMany({ playedAt: { $lt: threeDaysAgo } });
+    console.log(`Cleaned up ${result.deletedCount} games older than 3 days`);
+    return result.deletedCount;
+  } catch (error) {
+    console.error('Error cleaning up old games:', error);
+    throw error;
+  }
+}
+
+/**
  * POST /api/games
  * Save a new game result
  */
@@ -64,25 +81,66 @@ router.get('/:gameId', async (req, res) => {
 
 /**
  * GET /api/games
- * Get recent games (limited to 10)
+ * Get games with pagination
  */
 router.get('/', async (req, res) => {
   try {
-    // Get the 10 most recent games, with limited fields for the list view
-    const recentGames = await Game.find({})
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    // Get total count of games
+    const totalGames = await Game.countDocuments();
+    const totalPages = Math.ceil(totalGames / limit);
+    
+    // Get paginated games
+    const games = await Game.find({})
       .select('gameId playerInitials score bestWord playedAt')
       .sort({ playedAt: -1 })
-      .limit(10);
+      .skip(skip)
+      .limit(limit);
     
     res.status(200).json({
       success: true,
-      games: recentGames
+      games,
+      pagination: {
+        totalGames,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
     });
   } catch (error) {
-    console.error('Error retrieving recent games:', error);
+    console.error('Error retrieving games:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve recent games',
+      message: 'Failed to retrieve games',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/games/cleanup
+ * Manually trigger cleanup of old games
+ */
+router.post('/cleanup', async (req, res) => {
+  try {
+    const deletedCount = await cleanupOldGames();
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully cleaned up ${deletedCount} old games`,
+      deletedCount
+    });
+  } catch (error) {
+    console.error('Error during manual cleanup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clean up old games',
       error: error.message
     });
   }

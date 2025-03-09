@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 800px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -119,6 +119,106 @@
       color: white;
       margin-left: 10px;
     }
+    
+    /* Game History Styles */
+    .section-divider {
+      border-top: 2px solid #ddd;
+      margin: 40px 0 20px;
+      padding-top: 20px;
+    }
+    
+    .game-history-table {
+      width: 100%;
+      margin-top: 15px;
+    }
+    
+    .game-row {
+      cursor: pointer;
+    }
+    
+    .game-row:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .game-row.selected {
+      background-color: #e2f0fd;
+    }
+    
+    .game-details {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+      display: none;
+    }
+    
+    .game-details.visible {
+      display: block;
+    }
+    
+    .game-event {
+      margin: 5px 0;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .game-event.valid {
+      color: #155724;
+    }
+    
+    .game-event.invalid {
+      color: #721c24;
+    }
+    
+    .game-event.drop {
+      color: #856404;
+    }
+    
+    .cleanup-button {
+      background-color: #17a2b8;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    
+    .no-games {
+      padding: 20px;
+      text-align: center;
+      color: #6c757d;
+      font-style: italic;
+    }
+    
+    /* Pagination Styles */
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 15px;
+      gap: 10px;
+    }
+    
+    .pagination-button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 15px;
+      cursor: pointer;
+    }
+    
+    .pagination-button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .pagination-info {
+      font-size: 0.9rem;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -180,6 +280,51 @@
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+  </div>
+  
+  <div class="section-divider"></div>
+  
+  <div class="container">
+    <div>
+      <h2>Game History <button id="cleanup-games" class="cleanup-button">Clean Up Old Games Now</button></h2>
+      <p>Showing recent games. Games older than 3 days are automatically deleted by MongoDB's TTL index.</p>
+      <table id="games-table" class="game-history-table">
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Best Word</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="no-games" class="no-games" style="display: none;">No recent games found.</div>
+      
+      <!-- Pagination Controls -->
+      <div class="pagination-controls">
+        <button id="prev-page" class="pagination-button" disabled>Previous</button>
+        <span id="pagination-info" class="pagination-info">Page 1 of 1</span>
+        <button id="next-page" class="pagination-button" disabled>Next</button>
+      </div>
+    </div>
+    
+    <div id="game-details" class="game-details">
+      <h3>Game Details</h3>
+      <div id="game-info">
+        <p><strong>Player:</strong> <span id="detail-player"></span></p>
+        <p><strong>Score:</strong> <span id="detail-score"></span></p>
+        <p><strong>Best Word:</strong> <span id="detail-best-word"></span> (<span id="detail-best-word-score"></span> points)</p>
+        <p><strong>Played At:</strong> <span id="detail-played-at"></span></p>
+      </div>
+      <h4>Game Events</h4>
+      <div id="game-events"></div>
+      <div id="game-stats">
+        <p><strong>Valid Points:</strong> <span id="detail-valid-points"></span></p>
+        <p><strong>Invalid Points:</strong> <span id="detail-invalid-points"></span></p>
+        <p><strong>Drop Points:</strong> <span id="detail-drop-points"></span></p>
+      </div>
     </div>
   </div>
 
@@ -613,6 +758,226 @@
       createCalendar();
       updateCurrentTime();
     }, 60000);
+    
+    // Game History Functions
+    
+    // Pagination state
+    let currentPage = 1;
+    let totalPages = 1;
+    let pageSize = 20;
+    
+    // Load games with pagination
+    async function loadGames(page = 1) {
+      try {
+        // Update current page
+        currentPage = page;
+        
+        // Show loading state
+        const tbody = document.querySelector('#games-table tbody');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Loading games...</td></tr>';
+        
+        // Fetch games with pagination
+        const response = await fetch(`/api/games?page=${page}&limit=${pageSize}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to load games');
+        }
+        
+        // Clear the table
+        tbody.innerHTML = '';
+        
+        const noGamesDiv = document.getElementById('no-games');
+        
+        // Update pagination info
+        if (data.pagination) {
+          totalPages = data.pagination.totalPages;
+          updatePaginationControls(data.pagination);
+        }
+        
+        if (data.games.length === 0) {
+          noGamesDiv.style.display = 'block';
+          return;
+        }
+        
+        noGamesDiv.style.display = 'none';
+        
+        data.games.forEach(game => {
+          const row = document.createElement('tr');
+          row.className = 'game-row';
+          row.dataset.gameId = game.gameId;
+          
+          const dateCell = document.createElement('td');
+          const playedAt = new Date(game.playedAt);
+          dateCell.textContent = playedAt.toLocaleString();
+          
+          const playerCell = document.createElement('td');
+          playerCell.textContent = game.playerInitials;
+          
+          const scoreCell = document.createElement('td');
+          scoreCell.textContent = game.score;
+          
+          const bestWordCell = document.createElement('td');
+          bestWordCell.textContent = game.bestWord && game.bestWord.word ? 
+            `${game.bestWord.word} (${game.bestWord.score})` : 
+            'None';
+          
+          row.appendChild(dateCell);
+          row.appendChild(playerCell);
+          row.appendChild(scoreCell);
+          row.appendChild(bestWordCell);
+          
+          // Add click event to show game details
+          row.addEventListener('click', () => {
+            // Remove selected class from all rows
+            document.querySelectorAll('.game-row').forEach(r => {
+              r.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked row
+            row.classList.add('selected');
+            
+            // Load and show game details
+            loadGameDetails(game.gameId);
+          });
+          
+          tbody.appendChild(row);
+        });
+        
+        // Select the first game by default if available
+        if (data.games.length > 0) {
+          const firstRow = document.querySelector('.game-row');
+          firstRow.classList.add('selected');
+          loadGameDetails(data.games[0].gameId);
+        } else {
+          // Hide game details if no games
+          document.getElementById('game-details').classList.remove('visible');
+        }
+      } catch (error) {
+        console.error('Error loading games:', error);
+        document.getElementById('no-games').style.display = 'block';
+        document.getElementById('no-games').textContent = 'Error loading games: ' + error.message;
+      }
+    }
+    
+    // Update pagination controls
+    function updatePaginationControls(pagination) {
+      const prevButton = document.getElementById('prev-page');
+      const nextButton = document.getElementById('next-page');
+      const paginationInfo = document.getElementById('pagination-info');
+      
+      // Update pagination info text
+      paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalGames} games)`;
+      
+      // Update button states
+      prevButton.disabled = !pagination.hasPrevPage;
+      nextButton.disabled = !pagination.hasNextPage;
+    }
+    
+    // Add event listeners for pagination buttons
+    document.getElementById('prev-page').addEventListener('click', () => {
+      if (currentPage > 1) {
+        loadGames(currentPage - 1);
+      }
+    });
+    
+    document.getElementById('next-page').addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        loadGames(currentPage + 1);
+      }
+    });
+    
+    // Load game details
+    async function loadGameDetails(gameId) {
+      try {
+        const response = await fetch(`/api/games/${gameId}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to load game details');
+        }
+        
+        const game = data.game;
+        
+        // Update game info
+        document.getElementById('detail-player').textContent = game.playerInitials;
+        document.getElementById('detail-score').textContent = game.score;
+        document.getElementById('detail-best-word').textContent = game.bestWord && game.bestWord.word ? game.bestWord.word : 'None';
+        document.getElementById('detail-best-word-score').textContent = game.bestWord ? game.bestWord.score : '0';
+        document.getElementById('detail-played-at').textContent = new Date(game.playedAt).toLocaleString();
+        
+        // Update game events
+        const eventsDiv = document.getElementById('game-events');
+        eventsDiv.innerHTML = '';
+        
+        if (game.history && game.history.events) {
+          game.history.events.forEach((event, index) => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `game-event ${event.type}`;
+            
+            let eventText = '';
+            
+            switch (event.type) {
+              case 'valid':
+                eventText = `${index + 1}. ✓ ${event.details.word}: ${event.details.basePoints} × ${event.details.lengthMultiplier} × ${event.details.streakMultiplier} = ${event.details.finalPoints}`;
+                break;
+              case 'invalid':
+                eventText = `${index + 1}. ✗ ${event.details.word}: Invalid (-${Math.abs(event.details.points)})`;
+                break;
+              case 'drop':
+                eventText = `${index + 1}. ↓ ${event.details.letter}(-${Math.abs(event.details.points)})`;
+                break;
+            }
+            
+            eventDiv.textContent = eventText;
+            eventsDiv.appendChild(eventDiv);
+          });
+        } else {
+          eventsDiv.textContent = 'No game events found.';
+        }
+        
+        // Update game stats
+        document.getElementById('detail-valid-points').textContent = game.history ? game.history.validPoints : '0';
+        document.getElementById('detail-invalid-points').textContent = game.history ? game.history.invalidPoints : '0';
+        document.getElementById('detail-drop-points').textContent = game.history ? game.history.dropPoints : '0';
+        
+        // Show game details
+        document.getElementById('game-details').classList.add('visible');
+      } catch (error) {
+        console.error('Error loading game details:', error);
+        document.getElementById('game-details').classList.remove('visible');
+        alert('Error loading game details: ' + error.message);
+      }
+    }
+    
+    // Clean up old games
+    async function cleanupOldGames() {
+      try {
+        const response = await fetch('/api/games/cleanup', {
+          method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to clean up old games');
+        }
+        
+        alert(`Successfully cleaned up ${data.deletedCount} old games`);
+        
+        // Refresh games list
+        loadGames();
+      } catch (error) {
+        console.error('Error cleaning up old games:', error);
+        alert('Error cleaning up old games: ' + error.message);
+      }
+    }
+    
+    // Add event listener for cleanup button
+    document.getElementById('cleanup-games').addEventListener('click', cleanupOldGames);
+    
+    // Load games on page load
+    loadGames();
   </script>
 </body>
 </html>
