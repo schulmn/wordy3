@@ -152,7 +152,6 @@ class WordyGame {
             this.initialsInput.focus();
         });
 
-        this.resetButton.addEventListener('click', () => this.resetGame());
         this.submitButton.addEventListener('click', () => this.submitWord());
         
         this.wordInput.addEventListener('keypress', (e) => {
@@ -223,7 +222,7 @@ class WordyGame {
             }
 
             this.gameState = GAME_STATES.PLAYING;
-            this.startButton.disabled = true;
+            this.startButton.style.display = 'none'; // Hide the start button completely
             this.wordInput.focus();
             
             // Update next letter preview
@@ -342,7 +341,7 @@ class WordyGame {
             this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
         this.letterTray.innerHTML = '';
         this.wordInput.value = '';
-        this.startButton.disabled = false;
+        // Don't re-enable the start button
         this.timerDisplay.textContent = '0';
         this.previewLetter.textContent = '';
         this.remainingCount.textContent = '';
@@ -553,7 +552,7 @@ class WordyGame {
     
     async endGame() {
         this.gameState = GAME_STATES.GAME_OVER;
-        this.startButton.disabled = false;
+        // Keep the start button hidden (don't re-enable it)
         
         if (this.nextLetterTimer) {
             clearTimeout(this.nextLetterTimer);
