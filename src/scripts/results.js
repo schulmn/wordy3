@@ -16,10 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadGameResults(gameId);
     
     // Set up button event listeners
-    document.getElementById('play-again').addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
-    
     document.getElementById('share-results').addEventListener('click', () => {
         // Get the currently displayed game ID
         const currentGameId = document.querySelector('.game-item.active')?.dataset.gameId || gameId;
@@ -252,15 +248,10 @@ function showErrorMessage(message) {
             <h1>Error Loading Results</h1>
             <p>${message}</p>
             <div class="action-buttons">
-                <button id="play-again">Play New Game</button>
                 <button id="try-again">Try Again</button>
             </div>
         </div>
     `;
-    
-    document.getElementById('play-again').addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
     
     document.getElementById('try-again').addEventListener('click', () => {
         window.location.reload();
@@ -276,12 +267,7 @@ function showNoResultsMessage() {
             <h1>No Game Results Found</h1>
             <p>It seems there are no recent game results to display.</p>
             <div class="action-buttons">
-                <button id="play-again">Play New Game</button>
             </div>
         </div>
     `;
-    
-    document.getElementById('play-again').addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
 }
