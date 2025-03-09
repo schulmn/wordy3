@@ -34,6 +34,38 @@ router.post('/', async (req, res) => {
 });
 
 /**
+ * GET /api/games/today/top
+ * Get top 10 games for today, sorted by score
+ */
+router.get('/today/top', async (req, res) => {
+  try {
+    // Get today's date in US Central Time (start of day)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get top 10 games for today, sorted by score
+    const topGames = await Game.find({
+      playedAt: { $gte: today }
+    })
+      .select('gameId playerInitials score bestWord playedAt')
+      .sort({ score: -1 })
+      .limit(10);
+    
+    res.status(200).json({
+      success: true,
+      games: topGames
+    });
+  } catch (error) {
+    console.error('Error retrieving top games for today:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve top games for today',
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/games/:gameId
  * Get a specific game by ID
  */

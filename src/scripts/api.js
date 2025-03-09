@@ -77,6 +77,27 @@ export async function getRecentGames() {
 }
 
 /**
+ * Get top games for today (limited to 10)
+ * @returns {Promise<Array>} - Array of today's top game summaries
+ */
+export async function getTodayTopGames() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/games/today/top`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to retrieve top games for today');
+    }
+    
+    const data = await response.json();
+    return data.games;
+  } catch (error) {
+    console.error('Error retrieving top games for today:', error);
+    throw error;
+  }
+}
+
+/**
  * Get today's letter sequence (based on US Central Time)
  * @returns {Promise<Array<string>>} - Today's letter sequence
  * @throws {Error} - If no sequence is available for today

@@ -2,18 +2,21 @@
  * Wordy3 Game Results Page Script
  * Loads and displays game results from MongoDB
  */
-import { getGameResults, getRecentGames } from './api.js';
+import { getGameResults, getTodayTopGames } from './api.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check if we have a gameId from the URL
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('gameId');
     
-    // Fetch and display recent games
-    await loadRecentGames(gameId);
-    
     // Load the current game (either from URL or the most recent one)
-    await loadGameResults(gameId);
+    const currentGame = await loadGameResults(gameId);
+    
+    // Display the current game in the "Your Game" section
+    displayCurrentGame(currentGame);
+    
+    // Fetch and display today's top games
+    await loadTodayTopGames(gameId, currentGame);
     
     // Set up button event listeners
     document.getElementById('share-results').addEventListener('click', () => {
@@ -40,76 +43,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-/**
- * Load and display recent games
- * @param {string} currentGameId - The ID of the current game to highlight
- */
-async function loadRecentGames(currentGameId) {
-    const recentGamesList = document.getElementById('recent-games-list');
-    
-    try {
-        // Fetch recent games from the server
-        const recentGames = await getRecentGames();
-        
-        if (recentGames.length === 0) {
-            recentGamesList.innerHTML = '<p>No recent games found.</p>';
-            return;
-        }
-        
-        // If we don't have a current gameId, use the most recent one
-        if (!currentGameId && recentGames.length > 0) {
-            currentGameId = recentGames[0].gameId;
-        }
-        
-        // Display the list of recent games
-        recentGamesList.innerHTML = recentGames.map(game => {
-            const date = new Date(game.playedAt);
-            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            const isActive = game.gameId === currentGameId;
-            
-            return `
-                <div class="game-item ${isActive ? 'active' : ''}" data-game-id="${game.gameId}">
-                    <div class="game-item-details">
-                        <span>${game.playerInitials}</span>
-                        <span>Best: ${game.bestWord.word || 'None'} (${game.bestWord.score})</span>
-                    </div>
-                    <div class="game-item-info">
-                        <span class="game-item-score">${game.score} pts</span>
-                        <span class="game-item-date">${formattedDate}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        // Add click event listeners to game items
-        document.querySelectorAll('.game-item').forEach(item => {
-            item.addEventListener('click', async () => {
-                // Remove active class from all items
-                document.querySelectorAll('.game-item').forEach(i => i.classList.remove('active'));
-                
-                // Add active class to clicked item
-                item.classList.add('active');
-                
-                // Load the selected game
-                const gameId = item.dataset.gameId;
-                await loadGameResults(gameId);
-                
-                // Update URL without reloading the page
-                const url = new URL(window.location);
-                url.searchParams.set('gameId', gameId);
-                window.history.pushState({}, '', url);
-            });
-        });
-    } catch (error) {
-        console.error('Error loading recent games:', error);
-        recentGamesList.innerHTML = '<p>Failed to load recent games. Please try again later.</p>';
-    }
-}
 
 /**
  * Load and display game results
  * @param {string} gameId - The ID of the game to load
+ * @returns {Object} - The loaded game results
  */
 async function loadGameResults(gameId) {
     let gameResults;
@@ -124,26 +62,25 @@ async function loadGameResults(gameId) {
             return;
         }
     } else {
-        // If no gameId is provided, we'll rely on the most recent game
-        // which should be the first one in the recent games list
-        const recentGamesList = document.getElementById('recent-games-list');
-        const firstGame = recentGamesList.querySelector('.game-item');
-        
-        if (firstGame) {
-            const mostRecentGameId = firstGame.dataset.gameId;
-            try {
+        // If no gameId is provided, we'll fetch today's top games and use the first one
+        try {
+            const topGames = await getTodayTopGames();
+            
+            if (topGames.length > 0) {
+                const mostRecentGameId = topGames[0].gameId;
                 gameResults = await getGameResults(mostRecentGameId);
+                
                 // Update URL without reloading the page
                 const url = new URL(window.location);
                 url.searchParams.set('gameId', mostRecentGameId);
                 window.history.pushState({}, '', url);
-            } catch (error) {
-                console.error('Error fetching most recent game:', error);
-                showErrorMessage('Failed to load recent game results. Please try again later.');
+            } else {
+                showNoResultsMessage();
                 return;
             }
-        } else {
-            showNoResultsMessage();
+        } catch (error) {
+            console.error('Error fetching top games:', error);
+            showErrorMessage('Failed to load game results. Please try again later.');
             return;
         }
     }
@@ -192,6 +129,9 @@ async function loadGameResults(gameId) {
     document.getElementById('valid-points').textContent = gameResults.history.validPoints;
     document.getElementById('invalid-points').textContent = gameResults.history.invalidPoints;
     document.getElementById('drop-points').textContent = gameResults.history.dropPoints;
+    
+    // Return the game results for use by other functions
+    return gameResults;
 }
 
 /**
@@ -270,4 +210,118 @@ function showNoResultsMessage() {
             </div>
         </div>
     `;
+}
+
+/**
+ * Display the current game in the "Your Game" section
+ * @param {Object} game - The current game to display
+ */
+function displayCurrentGame(game) {
+    const currentGameDiv = document.getElementById('current-game');
+    
+    if (!game) {
+        currentGameDiv.innerHTML = '<p>No game data available.</p>';
+        return;
+    }
+    
+    const date = new Date(game.playedAt);
+    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    currentGameDiv.innerHTML = `
+        <div class="game-item-details">
+            <span>${game.playerInitials}</span>
+            <span>Best: ${game.bestWord.word || 'None'} (${game.bestWord.score})</span>
+        </div>
+        <div class="game-item-info">
+            <span class="game-item-score">${game.score} pts</span>
+            <span class="game-item-date">${formattedDate}</span>
+        </div>
+    `;
+    
+    // Make the current game selectable
+    currentGameDiv.dataset.gameId = game.gameId;
+    currentGameDiv.classList.add('active');
+    
+    currentGameDiv.addEventListener('click', async () => {
+        // Remove active class from all items
+        document.querySelectorAll('.game-item').forEach(i => i.classList.remove('active'));
+        
+        // Add active class to clicked item
+        currentGameDiv.classList.add('active');
+        
+        // Load the selected game
+        await loadGameResults(game.gameId);
+        
+        // Update URL without reloading the page
+        const url = new URL(window.location);
+        url.searchParams.set('gameId', game.gameId);
+        window.history.pushState({}, '', url);
+    });
+}
+
+/**
+ * Load and display today's top games
+ * @param {string} currentGameId - The ID of the current game to highlight
+ * @param {Object} currentGame - The current game object
+ */
+async function loadTodayTopGames(currentGameId, currentGame) {
+    const topGamesList = document.getElementById('top-games-list');
+    
+    try {
+        // Fetch today's top games from the server
+        const topGames = await getTodayTopGames();
+        
+        if (topGames.length === 0) {
+            topGamesList.innerHTML = '<p>No games played today yet.</p>';
+            return;
+        }
+        
+        // Check if the current game is in the top games list
+        const currentGameInTopGames = topGames.some(game => game.gameId === currentGameId);
+        
+        // Display the list of top games
+        topGamesList.innerHTML = topGames.map(game => {
+            const date = new Date(game.playedAt);
+            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Highlight the current game if it's in the top games list
+            const isActive = game.gameId === currentGameId;
+            
+            return `
+                <div class="game-item ${isActive ? 'active' : ''}" data-game-id="${game.gameId}">
+                    <div class="game-item-details">
+                        <span>${game.playerInitials}</span>
+                        <span>Best: ${game.bestWord.word || 'None'} (${game.bestWord.score})</span>
+                    </div>
+                    <div class="game-item-info">
+                        <span class="game-item-score">${game.score} pts</span>
+                        <span class="game-item-date">${formattedDate}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click event listeners to game items
+        document.querySelectorAll('.top-games-list .game-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                // Remove active class from all items
+                document.querySelectorAll('.game-item').forEach(i => i.classList.remove('active'));
+                
+                // Add active class to clicked item
+                item.classList.add('active');
+                
+                // Load the selected game
+                const gameId = item.dataset.gameId;
+                await loadGameResults(gameId);
+                
+                // Update URL without reloading the page
+                const url = new URL(window.location);
+                url.searchParams.set('gameId', gameId);
+                window.history.pushState({}, '', url);
+            });
+        });
+    } catch (error) {
+        console.error('Error loading top games for today:', error);
+        topGamesList.innerHTML = '<p>Failed to load top games for today. Please try again later.</p>';
+    }
 }

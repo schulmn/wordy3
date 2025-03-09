@@ -64,23 +64,27 @@
             font-size: 1rem;
         }
         
-        .recent-games {
+        .your-game, .top-games {
             margin-top: 2rem;
             padding-top: 1rem;
             border-top: 1px solid var(--border-color);
         }
         
-        .recent-games h3 {
+        .your-game h3, .top-games h3 {
             margin-bottom: 1rem;
             color: var(--primary-color);
         }
         
-        .recent-games-list {
+        .top-games-list {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
             max-height: 300px;
             overflow-y: auto;
+        }
+        
+        .your-game .game-item {
+            margin-bottom: 1rem;
         }
         
         .game-item {
@@ -155,7 +159,7 @@
                 padding: 0.5rem 1rem;
             }
             
-            .recent-games-list {
+            .top-games-list {
                 max-height: 250px;
             }
             
@@ -188,11 +192,18 @@
             </div>
         </div>
         
-        <div class="recent-games">
-            <h3>Recent Games</h3>
+        <div class="your-game">
+            <h3>Your Game</h3>
+            <div class="game-item" id="current-game">
+                <p>Loading your game...</p>
+            </div>
+        </div>
+        
+        <div class="top-games">
+            <h3>Today's Top Scores</h3>
             <p style="font-size: 0.85em; margin-top: -0.5rem; margin-bottom: 0.5rem; color: #666;">select a game to view details</p>
-            <div class="recent-games-list" id="recent-games-list">
-                <p>Loading recent games...</p>
+            <div class="top-games-list" id="top-games-list">
+                <p>Loading top games...</p>
             </div>
         </div>
         
