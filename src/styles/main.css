@@ -33,6 +33,10 @@ header {
     margin-bottom: 1rem;
 }
 
+header h1 {
+    margin-bottom: 0; /* Remove bottom margin */
+}
+
 h1 {
     color: var(--primary-color);
     margin-bottom: 0.5rem;
@@ -43,7 +47,7 @@ h1 {
     gap: 20px;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.5rem;
+    margin-top: 30px; /* Add more space between the directions and the score/multiplier line */
 }
 
 .score-display, .multiplier-display {
@@ -56,12 +60,12 @@ h1 {
 }
 
 .daily-info {
-    margin-top: 0.5rem;
-    padding: 0.5rem;
+    font-size: 0.75em; /* Make the font size smaller */
+    margin-top: 0; /* Remove any top margin */
+    padding: 0.25rem; /* Reduce padding */
     background-color: #e2f0fd;
     border-radius: 4px;
     text-align: center;
-    font-size: 0.9rem;
     color: var(--primary-color);
 }
 
