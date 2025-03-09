@@ -1,6 +1,6 @@
 {
   "name": "wordy3",
-  "version": "1.0.0",
+  "version": "0.8.23",
   "description": "A word-building game with strategic elements, time pressure, and competitive features.",
   "type": "module",
   "scripts": {
