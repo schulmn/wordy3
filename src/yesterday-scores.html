@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordy3 - Yesterday's Top Scores</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .results-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            width: 95%;
+        }
+        
+        .results-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .results-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .top-games {
+            margin-top: 2rem;
+        }
+        
+        .top-games h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        #yesterday-top-games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .game-item:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .game-item.active {
+            background-color: var(--primary-color-light);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .game-item-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .game-item-score {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .game-item-date {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .action-buttons a.button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .action-buttons a.button:hover {
+            background-color: var(--primary-color-dark);
+        }
+        
+        /* Modal specific styles */
+        #modal-game-history {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .history-event {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .history-event:last-child {
+            border-bottom: none;
+        }
+        
+        .event-icon {
+            font-size: 1.2em;
+        }
+        
+        .event-icon.valid {
+            color: var(--success-color);
+        }
+        
+        .event-icon.invalid {
+            color: var(--error-color);
+        }
+        
+        .event-icon.drop {
+            color: var(--warning-color);
+        }
+        
+        .event-details {
+            flex-grow: 1;
+        }
+        
+        /* Media queries for responsive design */
+        @media (max-width: 600px) {
+            .results-container {
+                margin: 1rem auto;
+                padding: 1rem;
+            }
+            
+            .results-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: center;
+            }
+            
+            .action-buttons a.button {
+                width: 100%;
+                padding: 0.5rem 1rem;
+                text-align: center;
+            }
+            
+            #yesterday-top-games-list {
+                max-height: 350px;
+            }
+            
+            .game-item {
+                padding: 0.5rem;
+            }
+            
+            #modal-game-history {
+                max-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <div class="results-header">
+            <h1>Yesterday's Top Scores</h1>
+            <p>The best Wordy3 performances from yesterday</p>
+        </div>
+        
+        <div class="top-games">
+            <p style="font-size: 0.85em; margin-top: -0.5rem; margin-bottom: 0.5rem; color: #666;">select a game to view details</p>
+            <div id="yesterday-top-games-list">
+                <p>Loading yesterday's top games...</p>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="index.html" class="button">Back to Game</a>
+        </div>
+    </div>
+    
+    <!-- Game Details Modal -->
+    <div id="game-details-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Game Details</h2>
+            <div class="game-stats">
+                <p>Player: <span id="modal-player-initials"></span></p>
+                <p>Final Score: <span id="modal-final-score"></span></p>
+                <p>Best Word: <span id="modal-best-word"></span> (<span id="modal-best-word-score"></span> points)</p>
+            </div>
+            <div class="game-history">
+                <h3>Game History</h3>
+                <div id="modal-game-history"></div>
+                <div class="points-breakdown">
+                    <p>Points from valid words: <span id="modal-valid-points">0</span></p>
+                    <p>Points lost from invalid words: <span id="modal-invalid-points">0</span></p>
+                    <p>Points lost from drops: <span id="modal-drop-points">0</span></p>
+                </div>
+            </div>
+            <button id="close-modal">Close</button>
+        </div>
+    </div>
+    
+    <script type="module" src="scripts/yesterday-scores.js"></script>
+</body>
+</html>

@@ -42,12 +42,17 @@ h1 {
     margin-bottom: 0.5rem;
 }
 
+.scores-nav {
+    text-align: center;
+    margin: 5px 0;
+}
+
 .game-info {
     display: flex;
     gap: 20px;
     align-items: center;
     justify-content: center;
-    margin-top: 30px; /* Add more space between the directions and the score/multiplier line */
+    margin-top: 8px; /* Reduced from 15px to tighten spacing */
 }
 
 .score-display, .multiplier-display {
@@ -280,9 +285,21 @@ button:hover {
 
 .game-controls {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 1rem;
-    justify-content: center;
     margin-top: 1rem;
+}
+
+.scores-link {
+    color: var(--secondary-color);
+    text-decoration: underline;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.scores-link:hover {
+    color: #2980b9;
 }
 
 #reset-game {
