@@ -1,7 +1,7 @@
 import { GAME_CONFIG, VISUAL_STATES, WORD_LENGTH_MULTIPLIERS, LETTER_POINTS, LETTER_POINT_COLORS, GAME_STATES, MULTIPLIER_CONFIG } from './constants.js';
 import { generateLetterSequence, createLetterElement, calculateWordPoints, canFormWord } from './letters.js';
 import { dictionary } from './dictionary.js';
-import { saveGameResults, getTodayLetterSequence } from './api.js';
+import { saveGameResults, getTodayLetterSequence, getYesterdayTopGames, getTodayTopGames, getGameResults } from './api.js';
 
 class GameHistory {
     constructor() {
@@ -605,7 +605,138 @@ class WordyGame {
     }
 }
 
-// Initialize game when DOM is loaded
+/**
+ * Load and display yesterday's top games in a pinball-style format
+ */
+async function loadYesterdayTopGames() {
+    const topGamesList = document.getElementById('yesterday-top-games-list');
+    
+    try {
+        // Fetch yesterday's top games from the server
+        const topGames = await getYesterdayTopGames();
+        
+        if (topGames.length === 0) {
+            topGamesList.innerHTML = '<p>No games were played yesterday.</p>';
+            return;
+        }
+        
+        // Display the list of top games (limited to 10)
+        const topTenGames = topGames.slice(0, 10);
+        topGamesList.innerHTML = topTenGames.map((game, index) => {
+            return `
+                <div class="score-item" data-game-id="${game.gameId}">
+                    <span class="score-item-rank">${index + 1}.</span>
+                    <span class="score-item-initials">${game.playerInitials}</span>
+                    <span class="score-item-score">${game.score}</span>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click event listeners to game items
+        document.querySelectorAll('.yesterday-scores .score-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const gameId = item.dataset.gameId;
+                
+                try {
+                    // Fetch the game details
+                    const gameDetails = await getGameResults(gameId);
+                    
+                    // Populate the modal with game details
+                    document.getElementById('modal-player-initials').textContent = gameDetails.playerInitials;
+                    document.getElementById('modal-final-score').textContent = gameDetails.score;
+                    document.getElementById('modal-best-word').textContent = gameDetails.bestWord.word || 'None';
+                    document.getElementById('modal-best-word-score').textContent = gameDetails.bestWord.score;
+                    
+                    // Populate game history
+                    const gameHistoryDiv = document.getElementById('modal-game-history');
+                    gameHistoryDiv.innerHTML = gameDetails.history.events.map((event, index) => {
+                        let icon, details;
+                        
+                        switch (event.type) {
+                            case 'valid':
+                                icon = '✓';
+                                details = `${event.details.word}: ${event.details.basePoints} × ${event.details.lengthMultiplier} × ${event.details.streakMultiplier} = ${event.details.finalPoints}`;
+                                break;
+                            case 'invalid':
+                                icon = '✗';
+                                details = `${event.details.word}: Invalid (-${Math.abs(event.details.points)})`;
+                                break;
+                            case 'drop':
+                                icon = '↓';
+                                details = `${event.details.letter}(-${Math.abs(event.details.points)})`;
+                                break;
+                        }
+                        
+                        return `
+                            <div class="history-event">
+                                <span class="event-icon ${event.type}">${icon}</span>
+                                <span class="event-details">${index + 1}. ${details}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    // Update points breakdown
+                    document.getElementById('modal-valid-points').textContent = gameDetails.history.validPoints;
+                    document.getElementById('modal-invalid-points').textContent = gameDetails.history.invalidPoints;
+                    document.getElementById('modal-drop-points').textContent = gameDetails.history.dropPoints;
+                    
+                    // Show the modal
+                    document.getElementById('game-details-modal').classList.remove('hidden');
+                    
+                } catch (error) {
+                    console.error('Error loading game details:', error);
+                    alert('Failed to load game details. Please try again later.');
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error loading top games for yesterday:', error);
+        topGamesList.innerHTML = '<p>Failed to load top games for yesterday.</p>';
+    }
+}
+
+/**
+ * Load and display today's top games in a pinball-style format
+ */
+async function loadTodayTopGames() {
+    const topGamesList = document.getElementById('today-top-games-list');
+    
+    try {
+        // Fetch today's top games from the server
+        const topGames = await getTodayTopGames();
+        
+        if (topGames.length === 0) {
+            topGamesList.innerHTML = '<p>No games played today yet.</p>';
+            return;
+        }
+        
+        // Display the list of top games (limited to 10)
+        const topTenGames = topGames.slice(0, 10);
+        topGamesList.innerHTML = topTenGames.map((game, index) => {
+            return `
+                <div class="score-item">
+                    <span class="score-item-rank">${index + 1}.</span>
+                    <span class="score-item-initials">${game.playerInitials}</span>
+                    <span class="score-item-score">${game.score}</span>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading top games for today:', error);
+        topGamesList.innerHTML = '<p>Failed to load top games for today.</p>';
+    }
+}
+
+// Initialize game and load top scores when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new WordyGame();
+    
+    // Load top scores
+    loadYesterdayTopGames();
+    loadTodayTopGames();
+    
+    // Add event listener for the close button of the game details modal
+    document.getElementById('close-modal').addEventListener('click', () => {
+        document.getElementById('game-details-modal').classList.add('hidden');
+    });
 });

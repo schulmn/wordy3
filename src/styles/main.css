@@ -22,10 +22,90 @@ body {
     line-height: 1.6;
 }
 
+/* Page Container with Three-Column Layout */
+.page-container {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.5rem;
+    gap: 1rem;
+}
+
+/* Game Container (Center Column) */
 .game-container {
+    flex: 1;
     max-width: 800px;
-    margin: 1rem auto;
+    margin: 0;
     padding: 1rem;
+}
+
+/* Scores Panels (Left and Right Columns) */
+.scores-panel {
+    width: 180px;
+    background-color: #e2f0fd;
+    color: var(--primary-color);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    align-self: flex-start;
+    margin-top: 1rem;
+}
+
+.scores-panel h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    border-bottom: 1px solid #bbd8f0;
+    padding-bottom: 0.5rem;
+}
+
+.scores-instruction {
+    color: #666;
+    font-size: 0.7rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.scores-list {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid #bbd8f0;
+}
+
+.yesterday-scores .score-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.yesterday-scores .score-item:hover {
+    background-color: #d0e6f7;
+}
+
+.score-item-rank {
+    color: #666;
+    width: 20px;
+}
+
+.score-item-initials {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.score-item-score {
+    color: var(--secondary-color);
+}
+
+.today-scores .score-item-score {
+    color: var(--success-color);
 }
 
 header {
@@ -333,11 +413,13 @@ button:hover {
 
 .modal-content {
     background-color: #fff;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 8px;
     text-align: center;
-    max-width: 500px;
+    max-width: 400px;
     width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .modal h2 {
@@ -373,43 +455,55 @@ button:hover {
 }
 
 .game-stats {
-    margin: 1.5rem 0;
+    margin: 1rem 0;
     text-align: left;
 }
 
 .game-stats p {
-    margin: 0.5rem 0;
-    font-size: 1.1rem;
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
 }
 
 .game-history {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
     text-align: left;
 }
 
 .game-history h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     color: var(--primary-color);
+    font-size: 0.9rem;
 }
 
 #complete-history {
-    max-height: 200px;
+    max-height: 150px;
     overflow-y: auto;
     margin-bottom: 1rem;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+#modal-game-history {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.85rem;
 }
 
 .points-breakdown {
-    margin-top: 1rem;
-    padding-top: 1rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     border-top: 1px solid var(--border-color);
 }
 
 .points-breakdown p {
-    margin: 0.3rem 0;
-    font-size: 1rem;
+    margin: 0.2rem 0;
+    font-size: 0.85rem;
 }
 
 /* Loading Overlay */
@@ -489,6 +583,45 @@ button:hover {
 }
 
 /* Media queries for responsive design */
+@media (max-width: 1024px) {
+    .page-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .scores-panel {
+        width: 100%;
+        max-width: 800px;
+        margin-bottom: 1rem;
+        order: 2;
+    }
+    
+    .game-container {
+        order: 1;
+        width: 100%;
+    }
+    
+    .yesterday-scores {
+        margin-bottom: 0;
+    }
+    
+    .today-scores {
+        margin-top: 0;
+    }
+    
+    .scores-list {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    
+    .score-item {
+        width: calc(50% - 0.5rem);
+        box-sizing: border-box;
+    }
+}
+
 @media (max-width: 600px) {
     .game-container {
         margin: 0.5rem auto;
@@ -542,6 +675,10 @@ button:hover {
     
     .letter-tray {
         flex-wrap: wrap;
+    }
+    
+    .score-item {
+        width: 100%;
     }
 }
 

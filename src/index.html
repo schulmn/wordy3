@@ -36,6 +36,28 @@
         </div>
     </div>
 
+    <!-- Game Details Modal (for yesterday's scores) -->
+    <div id="game-details-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Game Details</h2>
+            <div class="game-stats">
+                <p>Player: <span id="modal-player-initials"></span></p>
+                <p>Final Score: <span id="modal-final-score"></span></p>
+                <p>Best Word: <span id="modal-best-word"></span> (<span id="modal-best-word-score"></span> points)</p>
+            </div>
+            <div class="game-history">
+                <h3>Game History</h3>
+                <div id="modal-game-history"></div>
+                <div class="points-breakdown">
+                    <p>Points from valid words: <span id="modal-valid-points">0</span></p>
+                    <p>Points lost from invalid words: <span id="modal-invalid-points">0</span></p>
+                    <p>Points lost from drops: <span id="modal-drop-points">0</span></p>
+                </div>
+            </div>
+            <button id="close-modal">Close</button>
+        </div>
+    </div>
+
     <div id="loading-overlay" class="loading-overlay hidden">
         <div class="loading-content">
             <div class="loading-spinner"></div>
@@ -44,46 +66,64 @@
         </div>
     </div>
     <div id="error-message" class="error-message hidden"></div>
-    <div class="game-container">
-        <header>
-            <h1>Wordy3 - The Daily Wordy</h1>
-            <div class="daily-info">
-                <p>A new set of letters every day! Spell words 3-7 letters long from the tiles to gain points. Your point multiplier increases by spelling consecutive words correctly. Your multiplier resets if you drop a tile or spell an incorrect word. Bonus multiplier for words that are 5, 6, or 7 letters long. Your tray is full when it has 7 letters and you must act quickly before a tile drops.</p>
+    
+    <div class="page-container">
+        <!-- Yesterday's Top Scores Panel (Left) -->
+        <div class="scores-panel yesterday-scores">
+            <h3>Yesterday's Top 10</h3>
+            <p class="scores-instruction">Click on a score for details</p>
+            <div id="yesterday-top-games-list" class="scores-list">
+                <p>Loading yesterday's top games...</p>
             </div>
-            <div class="scores-nav">
-                <a href="yesterday-scores.html" class="scores-link">Yesterday's Top Scores</a>
-            </div>
-            <div class="game-info">
-                <div class="score-display">Score: <span id="score">0</span></div>
-                <div class="multiplier-display">Multiplier: <span id="current-multiplier">1.0</span>×</div>
-            </div>
-        </header>
-        
-        <main>
-            <div class="timer-display" id="timer-display">
-                Next letter in: <span id="next-letter-timer">3</span>s
-            </div>
-            <div class="next-letter-preview" id="next-letter-preview">
-                Next: <span class="next-letter"></span>
-                <span class="remaining-count"></span>
-            </div>
-            <div class="letter-tray" id="letter-tray">
-                <!-- Letters will be dynamically added here -->
-            </div>
-            
-            <div class="word-input-area">
-                <input type="text" id="word-input" placeholder="Type your word here">
-                <button id="submit-word">Submit</button>
-            </div>
+        </div>
 
-            <div class="history-panel">
-                <h3>Scoring History</h3>
-                <div id="recent-events"></div>
+        <!-- Game Container (Center) -->
+        <div class="game-container">
+            <header>
+                <h1>Wordy3 - The Daily Wordy</h1>
+                <div class="daily-info">
+                    <p>A new set of letters every day! Spell words 3-7 letters long from the tiles to gain points. Your point multiplier increases by spelling consecutive words correctly. Your multiplier resets if you drop a tile or spell an incorrect word. Bonus multiplier for words that are 5, 6, or 7 letters long. Your tray is full when it has 7 letters and you must act quickly before a tile drops.</p>
+                </div>
+                <div class="game-info">
+                    <div class="score-display">Score: <span id="score">0</span></div>
+                    <div class="multiplier-display">Multiplier: <span id="current-multiplier">1.0</span>×</div>
+                </div>
+            </header>
+            
+            <main>
+                <div class="timer-display" id="timer-display">
+                    Next letter in: <span id="next-letter-timer">3</span>s
+                </div>
+                <div class="next-letter-preview" id="next-letter-preview">
+                    Next: <span class="next-letter"></span>
+                    <span class="remaining-count"></span>
+                </div>
+                <div class="letter-tray" id="letter-tray">
+                    <!-- Letters will be dynamically added here -->
+                </div>
+                
+                <div class="word-input-area">
+                    <input type="text" id="word-input" placeholder="Type your word here">
+                    <button id="submit-word">Submit</button>
+                </div>
+
+                <div class="history-panel">
+                    <h3>Scoring History</h3>
+                    <div id="recent-events"></div>
+                </div>
+            </main>
+            
+            <div class="game-controls">
+                <button id="start-game">Start Game</button>
             </div>
-        </main>
-        
-        <div class="game-controls">
-            <button id="start-game">Start Game</button>
+        </div>
+
+        <!-- Today's Top Scores Panel (Right) -->
+        <div class="scores-panel today-scores">
+            <h3>Today's Top 10</h3>
+            <div id="today-top-games-list" class="scores-list">
+                <p>Loading today's top games...</p>
+            </div>
         </div>
     </div>
     
