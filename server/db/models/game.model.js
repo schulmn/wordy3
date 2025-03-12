@@ -51,6 +51,11 @@ const gameSchema = new mongoose.Schema({
   playedAt: {
     type: Date,
     default: Date.now
+  },
+  letterSequenceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LetterSequence',
+    required: true
   }
 });
 

@@ -117,6 +117,7 @@ class WordyGame {
         this.history = new GameHistory();
         this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
         this.processingWord = false; // Flag to track if a word is being processed
+        this.letterSequenceId = null; // Store the ID of the letter sequence being played
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -216,7 +217,9 @@ class WordyGame {
 
             // Get today's letter sequence (based on US Central Time)
             try {
-                this.letterSequence = await getTodayLetterSequence();
+                const sequenceData = await getTodayLetterSequence();
+                this.letterSequence = sequenceData.letters;
+                this.letterSequenceId = sequenceData.sequenceId;
             } catch (error) {
                 throw new Error('No letter sequence available for today. Please try again tomorrow.');
             }
@@ -572,7 +575,8 @@ class WordyGame {
                 validPoints: this.history.validPoints,
                 invalidPoints: this.history.invalidPoints,
                 dropPoints: this.history.dropPoints
-            }
+            },
+            letterSequenceId: this.letterSequenceId
         };
         
         // Save to MongoDB and get the gameId

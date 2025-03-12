@@ -120,7 +120,7 @@ export async function getYesterdayTopGames() {
 
 /**
  * Get today's letter sequence (based on US Central Time)
- * @returns {Promise<Array<string>>} - Today's letter sequence
+ * @returns {Promise<Object>} - Object containing today's letter sequence and sequence ID
  * @throws {Error} - If no sequence is available for today
  */
 export async function getTodayLetterSequence() {
@@ -133,7 +133,10 @@ export async function getTodayLetterSequence() {
     }
     
     const data = await response.json();
-    return data.letters;
+    return {
+      letters: data.letters,
+      sequenceId: data.sequenceId
+    };
   } catch (error) {
     console.error('Error retrieving letter sequence:', error);
     throw error;

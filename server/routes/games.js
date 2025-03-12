@@ -1,6 +1,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import Game from '../db/models/game.model.js';
+import LetterSequence from '../db/models/letter-sequence.model.js';
 import { normalizeToCentralTime } from '../utils/time-utils.js';
 
 const router = express.Router();
@@ -55,9 +56,21 @@ router.get('/today/top', async (req, res) => {
     // Get today's date normalized to midnight in Central Time
     const today = normalizeToCentralTime();
     
-    // Get top 10 games for today, sorted by score
+    // Find today's letter sequence
+    const todaySequence = await LetterSequence.findOne({
+      date: today
+    });
+    
+    if (!todaySequence) {
+      return res.status(404).json({
+        success: false,
+        message: 'No letter sequence available for today'
+      });
+    }
+    
+    // Get top 10 games that used today's letter sequence, sorted by score
     const topGames = await Game.find({
-      playedAt: { $gte: today }
+      letterSequenceId: todaySequence._id
     })
       .select('gameId playerInitials score bestWord playedAt')
       .sort({ score: -1 })
@@ -90,12 +103,21 @@ router.get('/yesterday/top', async (req, res) => {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    // Get top 20 games for yesterday, sorted by score
+    // Find yesterday's letter sequence
+    const yesterdaySequence = await LetterSequence.findOne({
+      date: yesterday
+    });
+    
+    if (!yesterdaySequence) {
+      return res.status(404).json({
+        success: false,
+        message: 'No letter sequence available for yesterday'
+      });
+    }
+    
+    // Get top 20 games that used yesterday's letter sequence, sorted by score
     const topGames = await Game.find({
-      playedAt: { 
-        $gte: yesterday,
-        $lt: today 
-      }
+      letterSequenceId: yesterdaySequence._id
     })
       .select('gameId playerInitials score bestWord playedAt')
       .sort({ score: -1 })
