@@ -414,12 +414,14 @@ class WordyGame {
                     this.fullTrayTimestamp = null;
                 } else if (trayAge >= GAME_CONFIG.LETTER_AGE_WARNING) {
                     // Warning state after 3 seconds
-                    oldestLetter.element.classList.remove(VISUAL_STATES.DANGER);
-                    oldestLetter.element.classList.add(VISUAL_STATES.WARNING);
+                    oldestLetter.element.classList.remove('danger');
+                    oldestLetter.element.classList.add('warning');
+                    oldestLetter.visualState = VISUAL_STATES.WARNING;
                     oldestLetter.element.dataset.age = remainingTime + 's';
                 } else {
                     // Normal state with countdown
-                    oldestLetter.element.classList.remove(VISUAL_STATES.WARNING, VISUAL_STATES.DANGER);
+                    oldestLetter.element.classList.remove('warning', 'danger');
+                    oldestLetter.visualState = VISUAL_STATES.NORMAL;
                     oldestLetter.element.dataset.age = remainingTime + 's';
                 }
             } else {
