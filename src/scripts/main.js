@@ -119,6 +119,7 @@ class WordyGame {
         this.processingWord = false; // Flag to track if a word is being processed
         this.letterSequenceId = null; // Store the ID of the letter sequence being played
         this.selectedLetters = []; // Array to track selected letter objects
+        this.wordPlayedSinceFullTray = false; // Flag to track if a word has been played since the tray became full
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -404,6 +405,22 @@ class WordyGame {
             // Handle letter aging when tray is full OR when we're out of sequence letters
             if (this.currentLetters.length === GAME_CONFIG.MAX_LETTERS || 
                 (this.letterSequence.length === 0 && this.currentLetters.length > 0)) {
+                
+                // Check if a word has been played since the tray became full
+                if (this.wordPlayedSinceFullTray) {
+                    // Reset the timer and warning animations
+                    this.fullTrayTimestamp = null;
+                    this.wordPlayedSinceFullTray = false; // Reset the flag
+                    
+                    // Reset visual state of all letters
+                    this.currentLetters.forEach(letterObj => {
+                        letterObj.element.classList.remove('warning', 'danger');
+                        letterObj.visualState = VISUAL_STATES.NORMAL;
+                        letterObj.element.removeAttribute('data-age');
+                    });
+                    return;
+                }
+                
                 // Initialize fullTrayTimestamp if not set
                 if (!this.fullTrayTimestamp) {
                     this.fullTrayTimestamp = Date.now();
@@ -466,6 +483,13 @@ class WordyGame {
                     }
                     // Reset timestamp to start aging the next oldest letter
                     this.fullTrayTimestamp = null;
+                    
+                    // Reset visual state of all remaining letters
+                    this.currentLetters.forEach(letterObj => {
+                        letterObj.element.classList.remove('warning', 'danger');
+                        letterObj.visualState = VISUAL_STATES.NORMAL;
+                        letterObj.element.removeAttribute('data-age');
+                    });
                 } else if (trayAge >= GAME_CONFIG.LETTER_AGE_WARNING) {
                     // Warning state after 3 seconds
                     oldestLetter.element.classList.remove('danger');
@@ -494,6 +518,7 @@ class WordyGame {
         this.bestWord = { word: '', score: 0 };
         this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
         this.history = new GameHistory();
+        this.wordPlayedSinceFullTray = false; // Reset the word played since full tray flag
         this.scoreDisplay.textContent = '0';
             this.multiplierDisplay.textContent = this.currentMultiplier.toFixed(2);
         this.letterTray.innerHTML = '';
@@ -634,6 +659,14 @@ class WordyGame {
                     streakMultiplier,
                     finalPoints
                 });
+                
+                // Reset timer and warning animations
+                this.fullTrayTimestamp = null;
+                this.currentLetters.forEach(letterObj => {
+                    letterObj.element.classList.remove('warning', 'danger');
+                    letterObj.visualState = VISUAL_STATES.NORMAL;
+                    letterObj.element.removeAttribute('data-age');
+                });
 
                 // Update consecutive multiplier
                 this.currentMultiplier = Math.min(
@@ -660,6 +693,14 @@ class WordyGame {
                 this.history.addEvent('invalid', {
                     word,
                     points: basePoints
+                });
+                
+                // Reset timer and warning animations (even if invalid)
+                this.fullTrayTimestamp = null;
+                this.currentLetters.forEach(letterObj => {
+                    letterObj.element.classList.remove('warning', 'danger');
+                    letterObj.visualState = VISUAL_STATES.NORMAL;
+                    letterObj.element.removeAttribute('data-age');
                 });
 
                 // Reset consecutive multiplier
