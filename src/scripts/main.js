@@ -443,7 +443,7 @@ class WordyGame {
                 
                 // Update oldest letter's state based on tray age
                 if (trayAge >= GAME_CONFIG.LETTER_AGE_DANGER) {
-                    // Remove the letter if tray has been full for 6 seconds
+                    // Remove the letter if tray has been full for 12 seconds
                     const index = this.currentLetters.indexOf(oldestLetter);
                     // Subtract points for the dropped letter
                     const letterPoints = LETTER_POINTS[oldestLetter.letter];
