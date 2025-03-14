@@ -43,6 +43,7 @@ export function createLetterElement(letter) {
     element.className = 'letter';
     const points = LETTER_POINTS[letter];
     element.dataset.points = points;
+    element.dataset.selected = 'false';
     element.style.backgroundColor = LETTER_POINT_COLORS[points];
     element.textContent = letter;
     
@@ -50,7 +51,8 @@ export function createLetterElement(letter) {
         element,
         letter,
         timestamp: Date.now(),
-        visualState: VISUAL_STATES.NORMAL
+        visualState: VISUAL_STATES.NORMAL,
+        selected: false
     };
 }
 

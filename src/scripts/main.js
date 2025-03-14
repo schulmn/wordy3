@@ -118,6 +118,7 @@ class WordyGame {
         this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
         this.processingWord = false; // Flag to track if a word is being processed
         this.letterSequenceId = null; // Store the ID of the letter sequence being played
+        this.selectedLetters = []; // Array to track selected letter objects
         
         // DOM elements
         this.letterTray = document.getElementById('letter-tray');
@@ -164,6 +165,25 @@ class WordyGame {
         // Auto-capitalize input and prevent non-letter characters
         this.wordInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
+            // Synchronize letter selection with input
+            this.syncLetterSelectionWithInput(e.target.value);
+        });
+
+        // Handle special keys like backspace
+        this.wordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                // Let the default behavior happen first, then sync
+                setTimeout(() => {
+                    this.syncLetterSelectionWithInput(this.wordInput.value);
+                }, 0);
+            }
+        });
+
+        // Add click handler for letter selection
+        this.letterTray.addEventListener('click', (e) => {
+            if (e.target.classList.contains('letter')) {
+                this.toggleLetterSelection(e.target);
+            }
         });
 
         // Initials input handling
@@ -191,6 +211,82 @@ class WordyGame {
         this.closeGameOverButton.addEventListener('click', () => {
             this.gameOverModal.classList.add('hidden');
         });
+    }
+
+    toggleLetterSelection(letterElement) {
+        if (this.gameState !== GAME_STATES.PLAYING) return;
+        
+        const letterIndex = this.currentLetters.findIndex(l => l.element === letterElement);
+        if (letterIndex === -1) return;
+        
+        const letterObj = this.currentLetters[letterIndex];
+        
+        // Toggle selection state
+        letterObj.selected = !letterObj.selected;
+        letterElement.dataset.selected = letterObj.selected.toString();
+        
+        if (letterObj.selected) {
+            // Add to selected letters
+            this.selectedLetters.push(letterObj);
+            letterElement.classList.add('selected');
+        } else {
+            // Remove from selected letters
+            const selectedIndex = this.selectedLetters.indexOf(letterObj);
+            if (selectedIndex !== -1) {
+                this.selectedLetters.splice(selectedIndex, 1);
+            }
+            letterElement.classList.remove('selected');
+        }
+        
+        // Update input field to reflect selected letters
+        this.updateWordInputFromSelection();
+    }
+
+    updateWordInputFromSelection() {
+        // Create word from selected letters
+        const word = this.selectedLetters.map(l => l.letter).join('');
+        this.wordInput.value = word;
+    }
+
+    syncLetterSelectionWithInput(inputValue) {
+        // Clear all selections first
+        this.clearAllLetterSelections();
+        
+        // If input is empty, we're done
+        if (!inputValue) return;
+        
+        // Create a copy of available letters to work with
+        const availableLetters = [...this.currentLetters];
+        const inputLetters = inputValue.toUpperCase().split('');
+        
+        // Try to select letters in the order they appear in the input
+        for (const inputLetter of inputLetters) {
+            // Find the first available letter matching the input letter
+            const letterIndex = availableLetters.findIndex(l => 
+                l.letter === inputLetter && !l.selected);
+            
+            if (letterIndex !== -1) {
+                // Select this letter
+                const letterObj = availableLetters[letterIndex];
+                letterObj.selected = true;
+                letterObj.element.dataset.selected = 'true';
+                letterObj.element.classList.add('selected');
+                this.selectedLetters.push(letterObj);
+                
+                // Remove from available pool to prevent reuse
+                availableLetters.splice(letterIndex, 1);
+            }
+        }
+    }
+
+    clearAllLetterSelections() {
+        // Clear all letter selections
+        this.currentLetters.forEach(letterObj => {
+            letterObj.selected = false;
+            letterObj.element.dataset.selected = 'false';
+            letterObj.element.classList.remove('selected');
+        });
+        this.selectedLetters = [];
     }
 
     updateNextLetterPreview() {
@@ -336,6 +432,7 @@ class WordyGame {
         this.gameState = GAME_STATES.IDLE;
         this.letterSequence = [];
         this.currentLetters = [];
+        this.selectedLetters = []; // Clear selected letters
         this.score = 0;
         this.bestWord = { word: '', score: 0 };
         this.currentMultiplier = MULTIPLIER_CONFIG.BASE;
@@ -425,6 +522,7 @@ class WordyGame {
         if (word.length < GAME_CONFIG.MIN_WORD_LENGTH) {
             input.classList.add('shake');
             setTimeout(() => input.classList.remove('shake'), 500);
+            this.processingWord = false;
             return;
         }
         
@@ -432,18 +530,27 @@ class WordyGame {
         if (!canFormWord(word, availableLetters)) {
             input.classList.add('shake');
             setTimeout(() => input.classList.remove('shake'), 500);
+            this.processingWord = false;
             return;
         }
         
-        // Remove used letters
-        const wordLetters = word.split('');
-        wordLetters.forEach(letter => {
-            const index = this.currentLetters.findIndex(letterObj => letterObj.letter === letter);
+        // Get the selected letters or find them if typed
+        if (this.selectedLetters.length === 0) {
+            this.syncLetterSelectionWithInput(word);
+        }
+        
+        // Remove used letters (using selected letters)
+        const usedLetters = [...this.selectedLetters];
+        usedLetters.forEach(letterObj => {
+            const index = this.currentLetters.indexOf(letterObj);
             if (index !== -1) {
-                this.currentLetters[index].element.remove();
+                letterObj.element.remove();
                 this.currentLetters.splice(index, 1);
             }
         });
+        
+        // Clear selected letters
+        this.selectedLetters = [];
 
         // Validate word and update score
         const basePoints = calculateWordPoints(word);
@@ -517,7 +624,7 @@ class WordyGame {
             }
             
             // Return the letters to the tray since we couldn't validate
-            this.returnLettersToTray(wordLetters);
+            this.returnLettersToTray(word.split(''));
         } finally {
             // Remove loading indicator
             input.classList.remove('validating');
