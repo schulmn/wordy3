@@ -673,12 +673,52 @@ button:hover {
         max-height: 150px;
     }
     
+    /* Remove flex-wrap to prevent letters from wrapping to a new line */
     .letter-tray {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        gap: 0.4rem; /* Slightly reduce gap between letters */
     }
     
     .score-item {
         width: 100%;
+    }
+}
+
+/* Add new media query for smaller screens (most iPhones) */
+@media (max-width: 414px) {
+    .letter {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .letter::before {
+        font-size: 0.6rem;
+        top: 1px;
+        right: 1px;
+    }
+    
+    .letter-tray {
+        gap: 0.25rem; /* Further reduce gap for smaller screens */
+        padding: 0.75rem;
+    }
+}
+
+/* Add another media query for very small screens */
+@media (max-width: 320px) {
+    .letter {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+    
+    .letter::before {
+        font-size: 0.5rem;
+    }
+    
+    .letter-tray {
+        gap: 0.2rem;
+        padding: 0.5rem;
     }
 }
 
