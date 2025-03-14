@@ -387,6 +387,15 @@ class WordyGame {
                     const letterPoints = LETTER_POINTS[oldestLetter.letter];
                     this.score -= letterPoints;
                     this.scoreDisplay.textContent = this.score;
+                    
+                    // Check if the letter is selected and remove it from selection
+                    const selectedIndex = this.selectedLetters.indexOf(oldestLetter);
+                    if (selectedIndex !== -1) {
+                        this.selectedLetters.splice(selectedIndex, 1);
+                        // Update the input field to reflect the new selection
+                        this.updateWordInputFromSelection();
+                    }
+                    
                     oldestLetter.element.remove();
                     this.currentLetters.splice(index, 1);
                     this.fullTrayTimestamp = null;
