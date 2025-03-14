@@ -427,6 +427,79 @@ button:hover {
     overflow-y: auto;
 }
 
+.results-modal-content {
+    max-width: 800px;
+    width: 95%;
+    text-align: left;
+}
+
+.results-modal-content .results-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.results-modal-content .results-header h1 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.results-modal-content .top-games {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.results-modal-content .your-game {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.results-modal-content .top-games h3, 
+.results-modal-content .your-game h3 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.results-modal-content .top-games-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.results-modal-content .game-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.results-modal-content .game-item:hover {
+    background-color: #e0e0e0;
+}
+
+.results-modal-content .game-item.active {
+    background-color: var(--primary-color-light);
+    border-left: 4px solid var(--primary-color);
+}
+
+.results-modal-content .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.results-modal-content .action-buttons button {
+    padding: 0.75rem 1.5rem;
+}
+
 .modal h2 {
     margin-top: 0;
     color: #333;

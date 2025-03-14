@@ -36,6 +36,53 @@
         </div>
     </div>
 
+    <!-- Game Results Modal -->
+    <div id="game-results-modal" class="modal hidden">
+        <div class="modal-content results-modal-content">
+            <div class="results-header">
+                <h1>Game Results</h1>
+                <p>Your Wordy3 game has ended. Here's how you did!</p>
+                <p style="font-size: 0.85em; color: #666;">(baseword score x word length bonus multiplier x consecutive streak multiplier)</p>
+            </div>
+            
+            <div class="game-stats">
+                <p>Player: <span id="modal-final-initials"></span></p>
+                <p>Final Score: <span id="modal-final-score"></span></p>
+                <p>Best Word: <span id="modal-best-word"></span> (<span id="modal-best-word-score"></span> points)</p>
+            </div>
+            
+            <div class="game-history">
+                <h3>Game History</h3>
+                <div id="modal-complete-history"></div>
+                <div class="points-breakdown">
+                    <p>Points from valid words: <span id="modal-valid-points">0</span></p>
+                    <p>Points lost from invalid words: <span id="modal-invalid-points">0</span></p>
+                    <p>Points lost from drops: <span id="modal-drop-points">0</span></p>
+                </div>
+            </div>
+            
+            <div class="your-game">
+                <h3>Your Game</h3>
+                <div class="game-item" id="modal-current-game">
+                    <p>Loading your game...</p>
+                </div>
+            </div>
+            
+            <div class="top-games">
+                <h3>Today's Top Scores</h3>
+                <p style="font-size: 0.85em; margin-top: -0.5rem; margin-bottom: 0.5rem; color: #666;">select a game to view details</p>
+                <div class="top-games-list" id="modal-top-games-list">
+                    <p>Loading top games...</p>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="modal-share-results">Share Results</button>
+                <button id="close-results-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Details Modal (for yesterday's scores) -->
     <div id="game-details-modal" class="modal hidden">
         <div class="modal-content">

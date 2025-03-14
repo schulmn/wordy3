@@ -144,6 +144,21 @@ class WordyGame {
         this.bestWordScoreDisplay = document.getElementById('best-word-score');
         this.closeGameOverButton = document.getElementById('close-game-over');
         
+        // Game Results Modal elements
+        this.gameResultsModal = document.getElementById('game-results-modal');
+        this.modalFinalInitialsDisplay = document.getElementById('modal-final-initials');
+        this.modalFinalScoreDisplay = document.getElementById('modal-final-score');
+        this.modalBestWordDisplay = document.getElementById('modal-best-word');
+        this.modalBestWordScoreDisplay = document.getElementById('modal-best-word-score');
+        this.modalCompleteHistoryDiv = document.getElementById('modal-complete-history');
+        this.modalValidPointsDisplay = document.getElementById('modal-valid-points');
+        this.modalInvalidPointsDisplay = document.getElementById('modal-invalid-points');
+        this.modalDropPointsDisplay = document.getElementById('modal-drop-points');
+        this.modalCurrentGameDiv = document.getElementById('modal-current-game');
+        this.modalTopGamesList = document.getElementById('modal-top-games-list');
+        this.modalShareResultsButton = document.getElementById('modal-share-results');
+        this.closeResultsModalButton = document.getElementById('close-results-modal');
+        
         this.initializeEventListeners();
     }
     
@@ -210,6 +225,36 @@ class WordyGame {
 
         this.closeGameOverButton.addEventListener('click', () => {
             this.gameOverModal.classList.add('hidden');
+        });
+        
+        // Game Results Modal event listeners
+        this.closeResultsModalButton.addEventListener('click', () => {
+            this.gameResultsModal.classList.add('hidden');
+        });
+        
+        this.modalShareResultsButton.addEventListener('click', () => {
+            // Get the currently displayed game ID
+            const currentGameId = document.querySelector('#game-results-modal .game-item.active')?.dataset.gameId;
+            
+            if (!currentGameId) return;
+            
+            // Create shareable text with gameId for direct access
+            const shareText = `I scored ${this.modalFinalScoreDisplay.textContent} points in Wordy3! My best word was "${this.modalBestWordDisplay.textContent}" for ${this.modalBestWordScoreDisplay.textContent} points. Check it out: ${window.location.origin}/game-results.html?gameId=${currentGameId}`;
+            
+            // Check if Web Share API is available
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Wordy3 Game Results',
+                    text: shareText
+                }).catch(error => {
+                    console.log('Error sharing:', error);
+                    // Fallback to clipboard
+                    this.copyToClipboard(shareText);
+                });
+            } else {
+                // Fallback to clipboard
+                this.copyToClipboard(shareText);
+            }
         });
     }
 
@@ -672,6 +717,47 @@ class WordyGame {
         });
     }
     
+    // Helper function to copy text to clipboard
+    copyToClipboard(text) {
+        // Try to use the modern clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    // Show feedback
+                    alert('Results copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    // Fall back to the older method
+                    this.fallbackCopyToClipboard(text);
+                });
+        } else {
+            // Fall back to the older method for browsers that don't support clipboard API
+            this.fallbackCopyToClipboard(text);
+        }
+    }
+
+    // Fallback method for copying to clipboard
+    fallbackCopyToClipboard(text) {
+        // Create temporary element
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.setAttribute('readonly', '');
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        
+        // Select and copy text
+        el.select();
+        document.execCommand('copy');
+        
+        // Remove temporary element
+        document.body.removeChild(el);
+        
+        // Show feedback
+        alert('Results copied to clipboard!');
+    }
+    
     async endGame() {
         this.gameState = GAME_STATES.GAME_OVER;
         // Keep the start button hidden (don't re-enable it)
@@ -703,28 +789,215 @@ class WordyGame {
             const response = await saveGameResults(gameResults);
             
             if (response.success) {
-                // Open results page in a new tab with gameId as URL parameter
-                window.open(`game-results.html?gameId=${response.gameId}`, '_blank');
+                // Show the game results modal
+                await this.showGameResultsModal(response.gameId);
             } else {
                 console.error('Failed to save game to server:', response);
-                // If server save fails, still open results page but it will show an error
-                window.open('game-results.html', '_blank');
+                // Show error in the modal
+                this.showGameResultsError('Failed to save game results to server.');
             }
         } catch (error) {
             console.error('Failed to save game to server:', error);
-            // If server save fails, still open results page but it will show an error
-            window.open('game-results.html', '_blank');
+            // Show error in the modal
+            this.showGameResultsError('Failed to save game results to server.');
         }
         
-        // Keep the modal code for backward compatibility, but don't show it
-        // Update game over modal (hidden)
+        // Keep the old game over modal code for backward compatibility, but don't show it
         this.finalInitialsDisplay.textContent = this.playerInitials;
         this.finalScoreDisplay.textContent = this.score;
         this.bestWordDisplay.textContent = this.bestWord.word || 'None';
         this.bestWordScoreDisplay.textContent = this.bestWord.score;
-        
-        // Update complete history (hidden)
         this.history.updateGameOverHistory();
+    }
+    
+    /**
+     * Show the game results modal with the current game results
+     * @param {string} gameId - The ID of the saved game
+     */
+    async showGameResultsModal(gameId) {
+        // Populate the modal with the current game results
+        this.modalFinalInitialsDisplay.textContent = this.playerInitials;
+        this.modalFinalScoreDisplay.textContent = this.score;
+        this.modalBestWordDisplay.textContent = this.bestWord.word || 'None';
+        this.modalBestWordScoreDisplay.textContent = this.bestWord.score;
+        
+        // Update history in the modal
+        this.modalCompleteHistoryDiv.innerHTML = this.history.events.map((event, index) => {
+            let icon, details;
+            
+            switch (event.type) {
+                case 'valid':
+                    icon = '✓';
+                    details = `${event.details.word}: ${event.details.basePoints} × ${event.details.lengthMultiplier} × ${event.details.streakMultiplier} = ${event.details.finalPoints}`;
+                    break;
+                case 'invalid':
+                    icon = '✗';
+                    details = `${event.details.word}: Invalid (-${Math.abs(event.details.points)})`;
+                    break;
+                case 'drop':
+                    icon = '↓';
+                    details = `${event.details.letter}(-${Math.abs(event.details.points)})`;
+                    break;
+            }
+            
+            return `
+                <div class="history-event">
+                    <span class="event-icon ${event.type}">${icon}</span>
+                    <span class="event-details">${index + 1}. ${details}</span>
+                </div>
+            `;
+        }).join('');
+        
+        // Update points breakdown
+        this.modalValidPointsDisplay.textContent = this.history.validPoints;
+        this.modalInvalidPointsDisplay.textContent = this.history.invalidPoints;
+        this.modalDropPointsDisplay.textContent = this.history.dropPoints;
+        
+        // Display the current game in the "Your Game" section
+        const date = new Date();
+        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        this.modalCurrentGameDiv.innerHTML = `
+            <div class="game-item-details">
+                <span>${this.playerInitials}</span>
+                <span>Best: ${this.bestWord.word || 'None'} (${this.bestWord.score})</span>
+            </div>
+            <div class="game-item-info">
+                <span class="game-item-score">${this.score} pts</span>
+                <span class="game-item-date">${formattedDate}</span>
+            </div>
+        `;
+        
+        // Make the current game selectable
+        this.modalCurrentGameDiv.dataset.gameId = gameId;
+        this.modalCurrentGameDiv.classList.add('active');
+        
+        // Load today's top games in the modal
+        await this.loadModalTopGames(gameId);
+        
+        // Show the modal
+        this.gameResultsModal.classList.remove('hidden');
+    }
+    
+    /**
+     * Show an error message in the game results modal
+     * @param {string} errorMessage - The error message to display
+     */
+    showGameResultsError(errorMessage) {
+        this.modalCurrentGameDiv.innerHTML = `<p>Error: ${errorMessage}</p>`;
+        this.modalTopGamesList.innerHTML = '<p>Failed to load top games.</p>';
+        this.gameResultsModal.classList.remove('hidden');
+    }
+    
+    /**
+     * Load and display today's top games in the modal
+     * @param {string} currentGameId - The ID of the current game to highlight
+     */
+    async loadModalTopGames(currentGameId) {
+        try {
+            // Fetch today's top games from the server
+            const topGames = await getTodayTopGames();
+            
+            if (topGames.length === 0) {
+                this.modalTopGamesList.innerHTML = '<p>No games played today yet.</p>';
+                return;
+            }
+            
+            // Check if the current game is in the top games list
+            const currentGameInTopGames = topGames.some(game => game.gameId === currentGameId);
+            
+            // Display the list of top games
+            this.modalTopGamesList.innerHTML = topGames.map(game => {
+                const date = new Date(game.playedAt);
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // Highlight the current game if it's in the top games list
+                const isActive = game.gameId === currentGameId;
+                
+                return `
+                    <div class="game-item ${isActive ? 'active' : ''}" data-game-id="${game.gameId}">
+                        <div class="game-item-details">
+                            <span>${game.playerInitials}</span>
+                            <span>Best: ${game.bestWord.word || 'None'} (${game.bestWord.score})</span>
+                        </div>
+                        <div class="game-item-info">
+                            <span class="game-item-score">${game.score} pts</span>
+                            <span class="game-item-date">${formattedDate}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add click event listeners to game items
+            document.querySelectorAll('#modal-top-games-list .game-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    // Remove active class from all items
+                    document.querySelectorAll('#game-results-modal .game-item').forEach(i => i.classList.remove('active'));
+                    
+                    // Add active class to clicked item
+                    item.classList.add('active');
+                    
+                    // Load the selected game
+                    const gameId = item.dataset.gameId;
+                    await this.loadGameForModal(gameId);
+                });
+            });
+        } catch (error) {
+            console.error('Error loading top games for today:', error);
+            this.modalTopGamesList.innerHTML = '<p>Failed to load top games for today. Please try again later.</p>';
+        }
+    }
+    
+    /**
+     * Load a specific game's details for display in the modal
+     * @param {string} gameId - The ID of the game to load
+     */
+    async loadGameForModal(gameId) {
+        try {
+            // Fetch the game details
+            const gameDetails = await getGameResults(gameId);
+            
+            // Populate the modal with game details
+            this.modalFinalInitialsDisplay.textContent = gameDetails.playerInitials;
+            this.modalFinalScoreDisplay.textContent = gameDetails.score;
+            this.modalBestWordDisplay.textContent = gameDetails.bestWord.word || 'None';
+            this.modalBestWordScoreDisplay.textContent = gameDetails.bestWord.score;
+            
+            // Populate game history
+            this.modalCompleteHistoryDiv.innerHTML = gameDetails.history.events.map((event, index) => {
+                let icon, details;
+                
+                switch (event.type) {
+                    case 'valid':
+                        icon = '✓';
+                        details = `${event.details.word}: ${event.details.basePoints} × ${event.details.lengthMultiplier} × ${event.details.streakMultiplier} = ${event.details.finalPoints}`;
+                        break;
+                    case 'invalid':
+                        icon = '✗';
+                        details = `${event.details.word}: Invalid (-${Math.abs(event.details.points)})`;
+                        break;
+                    case 'drop':
+                        icon = '↓';
+                        details = `${event.details.letter}(-${Math.abs(event.details.points)})`;
+                        break;
+                }
+                
+                return `
+                    <div class="history-event">
+                        <span class="event-icon ${event.type}">${icon}</span>
+                        <span class="event-details">${index + 1}. ${details}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            // Update points breakdown
+            this.modalValidPointsDisplay.textContent = gameDetails.history.validPoints;
+            this.modalInvalidPointsDisplay.textContent = gameDetails.history.invalidPoints;
+            this.modalDropPointsDisplay.textContent = gameDetails.history.dropPoints;
+        } catch (error) {
+            console.error('Error loading game details:', error);
+            this.modalCompleteHistoryDiv.innerHTML = '<p>Failed to load game details. Please try again later.</p>';
+        }
     }
 }
 
