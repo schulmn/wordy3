@@ -19,12 +19,12 @@ export const GAME_CONFIG = {
     MIN_LETTERS: 4,
     MAX_LETTERS: 7,
     LETTER_DROP_INTERVAL: 3000, // 3 seconds
-    FULL_TRAY_DROP_INTERVAL: 6000, // 6 seconds
+    FULL_TRAY_DROP_INTERVAL: 12000, // 12 seconds
     DEFAULT_SEQUENCE_LENGTH: 55,
     MIN_SEQUENCE_LENGTH: 30,
     MAX_SEQUENCE_LENGTH: 100,
     LETTER_AGE_WARNING: 3000, // 3 seconds before warning when tray is full
-    LETTER_AGE_DANGER: 6000 // 6 seconds before danger when tray is full (matches FULL_TRAY_DROP_INTERVAL)
+    LETTER_AGE_DANGER: 12000 // 12 seconds before danger when tray is full (matches FULL_TRAY_DROP_INTERVAL)
 };
 
 /**

@@ -21,9 +21,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN === '*' 
-    ? '*' 
-    : [process.env.CORS_ORIGIN, 'http://localhost:5173', 'http://localhost:5174'],
+  origin: true, // Allow requests from any origin
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -63,7 +61,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
