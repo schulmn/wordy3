@@ -391,9 +391,41 @@ class WordyGame {
         }
     }
     
+    processRemainingLetters() {
+        // Process each remaining letter
+        for (const letterObj of this.currentLetters) {
+            const letterPoints = LETTER_POINTS[letterObj.letter];
+            
+            // Deduct points for the letter
+            this.score -= letterPoints;
+            
+            // Add drop event to history
+            this.history.addEvent('drop', {
+                letter: letterObj.letter,
+                points: letterPoints
+            });
+            
+            // Remove the letter element from the DOM
+            letterObj.element.remove();
+        }
+        
+        // Clear the current letters array
+        this.currentLetters = [];
+        
+        // Update score display
+        this.scoreDisplay.textContent = this.score;
+    }
+    
     startLetterStateUpdates() {
         this.updateInterval = setInterval(() => {
             if (this.gameState !== GAME_STATES.PLAYING) return;
+
+            // NEW CONDITION: End game if less than 3 letters on tray and no more in sequence
+            if (this.letterSequence.length === 0 && this.currentLetters.length < 3 && !this.processingWord) {
+                this.processRemainingLetters(); // Process remaining letters before ending the game
+                this.endGame();
+                return;
+            }
 
             // Check if we should end the game (no more letters in sequence and tray is empty)
             // Only end the game if we're not currently processing a word
