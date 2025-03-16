@@ -6,6 +6,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { ensureFutureSequences } from './utils/letter-generator.js';
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +33,11 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(() => {
   console.log('Connected to MongoDB');
+  
+  // Check for future letter sequences when server starts
+  ensureFutureSequences(7).catch(err => {
+    console.error('Error ensuring future sequences on startup:', err.message);
+  });
 })
 .catch(err => {
   console.error('MongoDB connection error:', err);

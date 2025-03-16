@@ -1,12 +1,14 @@
 import express from 'express';
 import LetterSequence from '../db/models/letter-sequence.model.js';
 import { normalizeToCentralTime } from '../utils/time-utils.js';
+import { ensureFutureSequences } from '../utils/letter-generator.js';
 
 const router = express.Router();
 
 /**
  * GET /api/letters/today
  * Get today's letter sequence (based on US Central Time)
+ * Also ensures letter sequences exist for future dates
  */
 router.get('/today', async (req, res) => {
   try {
@@ -25,6 +27,12 @@ router.get('/today', async (req, res) => {
         message: 'No letter sequence available for today'
       });
     }
+    
+    // In the background, ensure sequences exist for future dates
+    // This won't block the response
+    ensureFutureSequences(7).catch(err => {
+      console.error('Error ensuring future sequences:', err.message);
+    });
     
     res.status(200).json({
       success: true,
