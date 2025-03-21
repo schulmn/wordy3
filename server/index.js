@@ -7,6 +7,7 @@ import bodyParser from 'body-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ensureFutureSequences } from './utils/letter-generator.js';
+import { cleanupOldData } from './utils/cleanup-utils.js';
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +38,11 @@ mongoose.connect(process.env.MONGODB_URI, {
   // Check for future letter sequences when server starts
   ensureFutureSequences(7).catch(err => {
     console.error('Error ensuring future sequences on startup:', err.message);
+  });
+  
+  // Clean up old data (older than 3 days) when server starts
+  cleanupOldData(3).catch(err => {
+    console.error('Error cleaning up old data on startup:', err.message);
   });
 })
 .catch(err => {
