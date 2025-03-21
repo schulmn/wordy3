@@ -48,11 +48,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.use('/api/games', gamesRoutes);
 app.use('/api/letters', lettersRoutes);
 
-// Admin route
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
-
 // Static files - moved after API routes
 app.use(express.static(path.join(__dirname, '../public')));
 
