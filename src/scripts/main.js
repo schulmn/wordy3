@@ -268,20 +268,66 @@ class WordyGame {
             
             // Check if Web Share API is available
             if (navigator.share) {
-                // Define share options with targets
-                const shareOptions = {
+                // Try to share with Twitter first
+                const twitterShareOptions = {
                     title: 'My Wordy3 Game Results',
-                    text: shareText,
-                    url: `${window.location.origin}/game-results.html?gameId=${currentGameId}`
+                    text: shareText + ' #Wordy3Game #WordGame',
+                    url: `${window.location.origin}`
                 };
                 
-                // Try to share with preferred targets
-                navigator.share(shareOptions)
-                    .catch(error => {
+                // Try Facebook-specific sharing if available
+                const facebookShareOptions = {
+                    title: 'My Wordy3 Game Results',
+                    text: shareText,
+                    url: `${window.location.origin}`
+                };
+                
+                // Cascading share approach
+                if (navigator.canShare && navigator.canShare(twitterShareOptions)) {
+                    navigator.share(twitterShareOptions)
+                        .catch(error => {
+                            console.log('Error sharing to Twitter:', error);
+                            // Try Facebook next
+                            if (navigator.canShare(facebookShareOptions)) {
+                                navigator.share(facebookShareOptions)
+                                    .catch(error => {
+                                        console.log('Error sharing to Facebook:', error);
+                                        // Fall back to generic sharing
+                                        navigator.share({
+                                            title: 'My Wordy3 Game Results',
+                                            text: shareText,
+                                            url: `${window.location.origin}`
+                                        }).catch(error => {
+                                            console.log('Error sharing:', error);
+                                            // Final fallback to clipboard
+                                            this.copyToClipboard(shareText);
+                                        });
+                                    });
+                            } else {
+                                // Fall back to generic sharing
+                                navigator.share({
+                                    title: 'My Wordy3 Game Results',
+                                    text: shareText,
+                                    url: `${window.location.origin}`
+                                }).catch(error => {
+                                    console.log('Error sharing:', error);
+                                    // Final fallback to clipboard
+                                    this.copyToClipboard(shareText);
+                                });
+                            }
+                        });
+                } else {
+                    // Fall back to generic sharing
+                    navigator.share({
+                        title: 'My Wordy3 Game Results',
+                        text: shareText,
+                        url: `${window.location.origin}`
+                    }).catch(error => {
                         console.log('Error sharing:', error);
-                        // Fallback to clipboard
+                        // Final fallback to clipboard
                         this.copyToClipboard(shareText);
                     });
+                }
             } else {
                 // Fallback to clipboard
                 this.copyToClipboard(shareText);
