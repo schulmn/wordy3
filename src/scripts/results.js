@@ -23,19 +23,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Get the currently displayed game ID
         const currentGameId = document.querySelector('.game-item.active')?.dataset.gameId || gameId;
         
-        // Create shareable text with gameId for direct access
-        const shareText = `I scored ${document.getElementById('final-score').textContent} points in Wordy3! My best word was "${document.getElementById('best-word').textContent}" for ${document.getElementById('best-word-score').textContent} points. Check it out: ${window.location.origin}/game-results.html?gameId=${currentGameId}`;
+        // Get today's date in MM/DD/YYYY format
+        const today = new Date();
+        const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+        
+        // Get the best word and censor all but the first two letters
+        const bestWord = document.getElementById('best-word').textContent;
+        const bestWordScore = document.getElementById('best-word-score').textContent;
+        const playerScore = document.getElementById('final-score').textContent;
+        
+        // Show only first two letters, replace the rest with lock emojis
+        let censoredWord = '';
+        if (bestWord && bestWord !== 'None') {
+            const firstTwoLetters = bestWord.substring(0, 2);
+            const remainingLetters = bestWord.length > 2 ? bestWord.substring(2) : '';
+            const lockEmojis = '🔒'.repeat(remainingLetters.length);
+            censoredWord = firstTwoLetters + lockEmojis;
+        } else {
+            censoredWord = 'None';
+        }
+        
+        // Create shareable text with gameId for direct access in multi-line format with emojis
+        const shareText = 
+`🎮 Wordy3 - ${formattedDate} 🎮
+📊 Score: ${playerScore} points
+🔤 Top word: ${censoredWord} (${bestWordScore} points)
+🏆 Play now: ${window.location.origin}`;
         
         // Check if Web Share API is available
         if (navigator.share) {
-            navigator.share({
+            // Define share options with targets
+            const shareOptions = {
                 title: 'My Wordy3 Game Results',
-                text: shareText
-            }).catch(error => {
-                console.log('Error sharing:', error);
-                // Fallback to clipboard
-                copyToClipboard(shareText);
-            });
+                text: shareText,
+                url: `${window.location.origin}/game-results.html?gameId=${currentGameId}`
+            };
+            
+            // Try to share with preferred targets
+            navigator.share(shareOptions)
+                .catch(error => {
+                    console.log('Error sharing:', error);
+                    // Fallback to clipboard
+                    copyToClipboard(shareText);
+                });
         } else {
             // Fallback to clipboard
             copyToClipboard(shareText);
