@@ -67,8 +67,60 @@ export const dictionary = {
                 // Check if we got a valid definition (not just suggestions)
                 // Merriam-Webster returns an array of objects for valid words
                 // If the word exists, the array will contain objects with a 'meta' property
-                return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 
-                       data[0].meta !== undefined;
+                
+                // First check if it's a valid word (has meta property)
+                const isValidResponse = Array.isArray(data) && data.length > 0 && 
+                                       typeof data[0] === 'object' && data[0].meta !== undefined;
+                
+                if (isValidResponse) {
+                    // Special case for known abbreviations that should be rejected
+                    const knownAbbreviations = [
+                        // Original set
+                        'pcp', 'fbi', 'cia', 'nasa', 'asap',
+                        // New set
+                        'dna', 'irs', 'atm', 'dvd', 'html', 'usb', 'pdf', 'ufo', 'sms', 'rsvp'
+                    ];
+                    if (knownAbbreviations.includes(word.toLowerCase())) {
+                        return false;
+                    }
+                    
+                    // Find all entries for this word
+                    const wordEntries = data.filter(entry => {
+                        const entryId = entry.meta?.id?.toLowerCase();
+                        const entryHw = entry.hwi?.hw?.toLowerCase();
+                        const wordLower = word.toLowerCase();
+                        
+                        return (entryId === wordLower || entryHw === wordLower);
+                    });
+                    
+                    // Check if there are any non-abbreviation entries for this word
+                    const hasNonAbbreviationEntry = wordEntries.some(entry => entry.fl !== 'abbreviation');
+                    
+                    // If there's at least one non-abbreviation entry, consider it a valid word
+                    if (hasNonAbbreviationEntry) {
+                        return true;
+                    }
+                    
+                    // If there are only abbreviation entries or no entries at all, check if it's an abbreviation
+                    const abbreviationEntries = data.filter(entry => entry.fl === 'abbreviation');
+                    
+                    // For abbreviations like "pcp", "fbi", etc., they are typically returned in uppercase
+                    // So we need to check both the original word and its uppercase version
+                    const upperWord = word.toUpperCase();
+                    const isAbbreviation = abbreviationEntries.some(entry => {
+                        const entryId = entry.meta?.id;
+                        const entryHw = entry.hwi?.hw;
+                        
+                        // Check if the entry matches either the original word or its uppercase version
+                        return (entryId === word || entryId === upperWord || 
+                                entryHw === word || entryHw === upperWord);
+                    });
+                    
+                    // If it's only an abbreviation, reject it
+                    return !isAbbreviation;
+                }
+                
+                return false;
             }
             
             // If primary API fails, try the backup API
