@@ -47,6 +47,11 @@ export function createLetterElement(letter) {
     element.style.backgroundColor = LETTER_POINT_COLORS[points];
     element.textContent = letter;
     
+    // Add accessibility attributes for screen readers (similar to alt text for images)
+    element.setAttribute('role', 'button');
+    element.setAttribute('aria-label', `Letter ${letter}, ${points} points`);
+    element.setAttribute('title', `Letter ${letter}: ${points} points`);
+    
     return {
         element,
         letter,
